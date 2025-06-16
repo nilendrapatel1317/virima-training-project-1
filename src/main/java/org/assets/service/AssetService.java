@@ -87,7 +87,7 @@ public class AssetService {
         return null;
     }
 
-    // update asset
+    // update asset by id
     public void updateAsset(int id, String name, String type, Double value) {
         try (Connection conn = DBUtil.getConnection()) {
             String findSql = "SELECT * FROM assets WHERE id = ?";
