@@ -1,0 +1,192 @@
+package org.assets.service;
+
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.assets.entities.Asset;
+import org.assets.dbConnection.DBUtil;
+
+import java.io.*;
+import java.sql.*;
+
+public class AssetService {
+
+    // Add asset
+    public void createAsset(Asset asset) {
+        try (Connection conn = DBUtil.getConnection()) {
+            String sql = "INSERT INTO assets(name, type, value) VALUES (?, ?, ?)";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setString(1, asset.getName());
+            stmt.setString(2, asset.getType());
+            stmt.setDouble(3, asset.getValue());
+            stmt.executeUpdate();
+            System.out.println("Asset inserted successfully!");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // view all assets
+    public void viewAssets() {
+        try (Connection conn = DBUtil.getConnection()) {
+            String sql = "SELECT * FROM assets";
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+            while (rs.next()) {
+                System.out.println(
+                        rs.getInt("id") + " | " +
+                                rs.getString("name") + " | " +
+                                rs.getString("type") + " | " +
+                                rs.getDouble("value")
+                );
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // view asset by id
+    public Asset getAssetById(int id) {
+        try (Connection conn = DBUtil.getConnection()) {
+            String sql = "SELECT * FROM assets WHERE id = ?";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return new Asset(
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        rs.getString("type"),
+                        rs.getDouble("value")
+                );
+            } else {
+                System.out.println("No asset found with ID: " + id);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // update asset
+    public void updateAsset(int id, String name, String type, Double value) {
+        try (Connection conn = DBUtil.getConnection()) {
+            String findSql = "SELECT * FROM assets WHERE id = ?";
+            PreparedStatement stmt = conn.prepareStatement(findSql);
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                String currentName = rs.getString("name");
+                String currentType = rs.getString("type");
+                double currentValue = rs.getDouble("value");
+
+                String finalName = (name == null || name.isBlank()) ? currentName : name;
+                String finalType = (type == null || type.isBlank()) ? currentType : type;
+                double finalVal = (value == null) ? currentValue : value;
+
+                String sql = "UPDATE assets SET name = ?, type = ?, value = ? WHERE id = ?";
+                PreparedStatement updateStmt = conn.prepareStatement(sql);
+                updateStmt.setString(1, finalName);
+                updateStmt.setString(2, finalType);
+                updateStmt.setDouble(3, finalVal);
+                updateStmt.setInt(4, id);
+
+                int rows = updateStmt.executeUpdate();
+                if (rows > 0) {
+                    System.out.println("Asset updated successfully.");
+                } else {
+                    System.out.println("Asset not found.");
+                }
+            } else {
+                System.out.println("Asset with ID " + id + " not found.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // delete asset
+    public void deleteAsset(int id) {
+        try (Connection conn = DBUtil.getConnection()) {
+            String sql = "DELETE FROM assets WHERE id = ?";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, id);
+            int rows = stmt.executeUpdate();
+            if (rows > 0) {
+                System.out.println("Asset deleted successfully.");
+            } else {
+                System.out.println("Asset not found.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // upload asset from excel file
+    public void uploadAssetsFromExcel(String filePath) throws IOException, SQLException {
+        try (FileInputStream fis = new FileInputStream(filePath);
+             Connection conn = DBUtil.getConnection()) {
+
+            Workbook workbook = WorkbookFactory.create(fis);
+            Sheet sheet = workbook.getSheetAt(0);
+
+            String sql = "INSERT INTO assets(name, type, value) VALUES (?, ?, ?)";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) continue; // skip header
+
+                String name = row.getCell(0).getStringCellValue();
+                String type = row.getCell(1).getStringCellValue();
+                double value = row.getCell(2).getNumericCellValue();
+
+                stmt.setString(1, name);
+                stmt.setString(2, type);
+                stmt.setDouble(3, value);
+                stmt.addBatch();
+            }
+
+            stmt.executeBatch();
+            workbook.close();
+            System.out.println("Data uploaded from Excel file.");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // export asset from excel file
+    public void exportAssetsToExcel(String filePath) throws SQLException, IOException {
+        try (Connection conn = DBUtil.getConnection()) {
+            String sql = "SELECT * FROM assets";
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+
+            Workbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Assets");
+
+            Row header = sheet.createRow(0);
+            header.createCell(0).setCellValue("Name");
+            header.createCell(1).setCellValue("Type");
+            header.createCell(2).setCellValue("Value");
+
+            int rowIndex = 1;
+            while (rs.next()) {
+                Row row = sheet.createRow(rowIndex++);
+                row.createCell(0).setCellValue(rs.getString("name"));
+                row.createCell(1).setCellValue(rs.getString("type"));
+                row.createCell(2).setCellValue(rs.getDouble("value"));
+            }
+
+            try (FileOutputStream fos = new FileOutputStream(filePath)) {
+                workbook.write(fos);
+            }
+
+            workbook.close();
+            System.out.println("Data exported to Excel file.");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
