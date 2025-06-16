@@ -52,7 +52,7 @@ public class Driver {
                 case 4:
                     System.out.print("Enter ID to update: ");
                     int uid = sc.nextInt();
-                    sc.nextLine(); // consume newline
+                    sc.nextLine();
 
                     Asset existingAsset = service.getAssetById(uid);
                     if (existingAsset == null) {
