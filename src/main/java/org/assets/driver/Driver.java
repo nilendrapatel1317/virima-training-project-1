@@ -13,19 +13,26 @@ public class Driver {
         Scanner sc = new Scanner(System.in);
 
         while (true) {
-            System.out.println("\n--- Asset Management ---");
+            System.out.println("\n--- Asset Management System ---");
+            System.out.println("0. Exit");
             System.out.println("1. Add Asset");
-            System.out.println("2. View Assets");
-            System.out.println("3. Get Asset by ID");
+            System.out.println("2. View All Assets");
+            System.out.println("3. View Asset by ID");
             System.out.println("4. Update Asset");
             System.out.println("5. Delete Asset");
             System.out.println("6. Upload Assets from File");
             System.out.println("7. Export Assets to File");
-            System.out.println("8. Exit");
+            System.out.println("8. Activate Asset");
+            System.out.println("9. Deactivate Asset");
             System.out.print("Choose: ");
             int choice = sc.nextInt();
 
             switch (choice) {
+                case 0:
+                    System.out.println("Exiting...");
+                    System.out.println("Thanks For Using Assets Management System Application !");
+                    return;
+
                 case 1:
                     sc.nextLine();
                     System.out.print("Enter name: ");
@@ -96,9 +103,17 @@ public class Driver {
                     break;
 
                 case 8:
-                    System.out.println("Exiting...");
-                    System.out.println("Thanks For Using Assets Management System Application !");
-                    return;
+                    System.out.print("Enter ID to activate asset: ");
+                    int activateId = sc.nextInt();
+                    service.activateAssets(activateId);
+                    break;
+
+                case 9:
+                    System.out.print("Enter ID to deactivate asset: ");
+                    int deactivateId = sc.nextInt();
+                    service.deactivateAssets(deactivateId);
+                    break;
+
 
                 default:
                     System.out.println("Invalid choice!");

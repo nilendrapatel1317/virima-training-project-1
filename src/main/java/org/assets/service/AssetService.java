@@ -16,11 +16,12 @@ public class AssetService {
     // Add asset
     public void createAsset(Asset asset) {
         try (Connection conn = DBUtil.getConnection()) {
-            String sql = "INSERT INTO assets(name, type, value) VALUES (?, ?, ?)";
+            String sql = "INSERT INTO assets(name, type, value, active) VALUES (?, ?, ?,?)";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setString(1, asset.getName());
             stmt.setString(2, asset.getType());
             stmt.setDouble(3, asset.getValue());
+            stmt.setBoolean(4, true);
             stmt.executeUpdate();
             System.out.println("Asset inserted successfully!");
         } catch (Exception e) {
@@ -31,15 +32,17 @@ public class AssetService {
     // view all assets
     public void viewAssets() {
         try (Connection conn = DBUtil.getConnection()) {
-            String sql = "SELECT * FROM assets";
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(sql);
+            String sql = "SELECT * FROM assets where active = ?";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setBoolean(1, true);
+            ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 System.out.println(
                         rs.getInt("id") + " | " +
                                 rs.getString("name") + " | " +
                                 rs.getString("type") + " | " +
-                                rs.getDouble("value")
+                                rs.getDouble("value") + " | " +
+                                rs.getBoolean("active")
                 );
             }
         } catch (Exception e) {
@@ -59,7 +62,8 @@ public class AssetService {
                         rs.getInt("id"),
                         rs.getString("name"),
                         rs.getString("type"),
-                        rs.getDouble("value")
+                        rs.getDouble("value"),
+                        rs.getBoolean("active")
                 );
             } else {
                 System.out.println("No asset found with ID: " + id);
@@ -132,7 +136,7 @@ public class AssetService {
             Workbook workbook = WorkbookFactory.create(fis);
             Sheet sheet = workbook.getSheetAt(0);
 
-            String sql = "INSERT INTO assets(name, type, value) VALUES (?, ?, ?)";
+            String sql = "INSERT INTO assets(name, type, value, active) VALUES (?, ?, ?, ?)";
             PreparedStatement stmt = conn.prepareStatement(sql);
 
             for (Row row : sheet) {
@@ -141,10 +145,12 @@ public class AssetService {
                 String name = row.getCell(0).getStringCellValue();
                 String type = row.getCell(1).getStringCellValue();
                 double value = row.getCell(2).getNumericCellValue();
+                boolean active = row.getCell(3).getBooleanCellValue();
 
                 stmt.setString(1, name);
                 stmt.setString(2, type);
                 stmt.setDouble(3, value);
+                stmt.setBoolean(4, active);
                 stmt.addBatch();
             }
 
@@ -170,6 +176,7 @@ public class AssetService {
             header.createCell(0).setCellValue("Name");
             header.createCell(1).setCellValue("Type");
             header.createCell(2).setCellValue("Value");
+            header.createCell(3).setCellValue("Active Status");
 
             int rowIndex = 1;
             while (rs.next()) {
@@ -177,6 +184,7 @@ public class AssetService {
                 row.createCell(0).setCellValue(rs.getString("name"));
                 row.createCell(1).setCellValue(rs.getString("type"));
                 row.createCell(2).setCellValue(rs.getDouble("value"));
+                row.createCell(3).setCellValue(rs.getBoolean("active"));
             }
 
             try (FileOutputStream fos = new FileOutputStream(filePath)) {
@@ -187,6 +195,40 @@ public class AssetService {
             System.out.println("Data exported to Excel file.");
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    // Activate Asset
+    public void activateAssets(int activateId) {
+        try (Connection conn = DBUtil.getConnection()) {
+            String sql = "UPDATE assets SET active = 1 WHERE id = ?";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, activateId);
+            int rows = stmt.executeUpdate();
+            if (rows > 0) {
+                System.out.println("Asset Activated successfully.");
+            } else {
+                System.out.println("Asset not found.");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // Deactivate Asset
+    public void deactivateAssets(int deactivateId) {
+        try (Connection conn = DBUtil.getConnection()) {
+            String sql = "UPDATE assets SET active = 0 WHERE id = ?";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, deactivateId);
+            int rows = stmt.executeUpdate();
+            if (rows > 0) {
+                System.out.println("Asset Deactivated successfully.");
+            } else {
+                System.out.println("Asset not found.");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 }
