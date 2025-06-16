@@ -10,6 +10,8 @@ import org.assets.dbConnection.DBUtil;
 
 import java.io.*;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AssetService {
 
@@ -29,24 +31,75 @@ public class AssetService {
         }
     }
 
-    // View assets with pagination
-    public void viewAssetsWithPagination(int page, int pageSize) {
+    // view all assets
+    public void viewAssetsWithPagination(
+            int page,
+            int pageSize,
+            Integer idStart,
+            Integer idEnd,
+            String nameFilter,
+            String typeFilter,
+            Double valueStart,
+            Double valueEnd) {
+
         try (Connection conn = DBUtil.getConnection()) {
-            String sql = "SELECT * FROM assets WHERE active = ? LIMIT ? OFFSET ?";
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setBoolean(1, true);
-            stmt.setInt(2, pageSize);
-            stmt.setInt(3, (page - 1) * pageSize);
+
+            StringBuilder sql = new StringBuilder("SELECT * FROM assets WHERE active = true");
+            List<Object> params = new ArrayList<>();
+
+            if (idStart != null) {
+                sql.append(" AND id >= ?");
+                params.add(idStart);
+            }
+
+            if (idEnd != null) {
+                sql.append(" AND id <= ?");
+                params.add(idEnd);
+            }
+
+            if (nameFilter != null && !nameFilter.isEmpty()) {
+                sql.append(" AND name LIKE ?");
+                params.add("%" + nameFilter + "%");
+            }
+
+            if (typeFilter != null && !typeFilter.isEmpty()) {
+                sql.append(" AND type = ?");
+                params.add(typeFilter);
+            }
+
+            if (valueStart != null) {
+                sql.append(" AND value >= ?");
+                params.add(valueStart);
+            }
+
+            if (valueEnd != null) {
+                sql.append(" AND value <= ?");
+                params.add(valueEnd);
+            }
+
+            sql.append(" LIMIT ? OFFSET ?");
+            params.add(pageSize);
+            params.add((page - 1) * pageSize);
+
+            PreparedStatement stmt = conn.prepareStatement(sql.toString());
+
+            // Set all parameters dynamically
+            for (int i = 0; i < params.size(); i++) {
+                stmt.setObject(i + 1, params.get(i));
+            }
 
             ResultSet rs = stmt.executeQuery();
 
             boolean found = false;
+            int row = 0;
 
             System.out.println("\n--- Page " + page + " ---");
             while (rs.next()) {
                 found = true;
+                row++;
                 System.out.println(
-                        rs.getInt("id") + " | " +
+                        row + " - " +
+                                rs.getInt("id") + " | " +
                                 rs.getString("name") + " | " +
                                 rs.getString("type") + " | " +
                                 rs.getDouble("value") + " | " +
@@ -55,13 +108,14 @@ public class AssetService {
             }
 
             if (!found) {
-                System.out.println("No assets found on this page.");
+                System.out.println("No assets found with the given filter on this page.");
             }
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
 
     // view asset by id
     public Asset getAssetById(int id) {
