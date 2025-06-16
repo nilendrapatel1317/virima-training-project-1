@@ -46,7 +46,11 @@ public class Driver {
                     break;
 
                 case 2:
-                    service.viewAssets();
+                    System.out.print("Enter page number: ");
+                    int page = sc.nextInt();
+                    System.out.print("Enter number of records per page: ");
+                    int size = sc.nextInt();
+                    service.viewAssetsWithPagination(page, size);
                     break;
 
                 case 3:

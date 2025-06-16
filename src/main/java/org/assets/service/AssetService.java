@@ -30,13 +30,22 @@ public class AssetService {
     }
 
     // view all assets
-    public void viewAssets() {
+    // View assets with pagination
+    public void viewAssetsWithPagination(int page, int pageSize) {
         try (Connection conn = DBUtil.getConnection()) {
-            String sql = "SELECT * FROM assets where active = ?";
+            String sql = "SELECT * FROM assets WHERE active = ? LIMIT ? OFFSET ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setBoolean(1, true);
+            stmt.setInt(2, pageSize);
+            stmt.setInt(3, (page - 1) * pageSize);
+
             ResultSet rs = stmt.executeQuery();
+
+            boolean found = false;
+
+            System.out.println("\n--- Page " + page + " ---");
             while (rs.next()) {
+                found = true;
                 System.out.println(
                         rs.getInt("id") + " | " +
                                 rs.getString("name") + " | " +
@@ -45,6 +54,11 @@ public class AssetService {
                                 rs.getBoolean("active")
                 );
             }
+
+            if (!found) {
+                System.out.println("No assets found on this page.");
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
