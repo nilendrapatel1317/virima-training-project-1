@@ -29,7 +29,6 @@ public class AssetService {
         }
     }
 
-    // view all assets
     // View assets with pagination
     public void viewAssetsWithPagination(int page, int pageSize) {
         try (Connection conn = DBUtil.getConnection()) {
