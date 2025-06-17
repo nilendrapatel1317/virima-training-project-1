@@ -1,0 +1,51 @@
+Database : virima
+Table : assets 
+
+CREATE TABLE assets (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100),
+    type VARCHAR(50),
+    value DOUBLE,
+    active BOOLEAN,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+--- Asset Management System ---
+
+=== Main Menu ====
+
+0. Exit
+1. Add Asset
+2. View All Assets
+	Choose filter option:
+	0) Go Back
+	1) Filter by ID Range
+	2) Filter by Name
+	3) Filter by Type
+	4) Filter by Value Range
+	5) No Filter
+3. View Single Asset by Id
+4. Update Asset
+5. Delete Asset
+6. Asset Status
+	Choose operation option:
+	0) Go Back
+	1) Activate asset
+	2) Deactivate asset
+7. Import / Export
+	Choose operation option:
+	0) Go Back
+	1) Import data from excel file
+	2) Export data to excel file
+Enter your choice: 
+
+
+=== Features ===
+
+1. Performed CRUD operations
+2. Handle Input Exception
+3. Show details in Table Format
+4. Added loader while performing CRUD operations.
+

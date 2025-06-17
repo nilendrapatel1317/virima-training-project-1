@@ -123,9 +123,17 @@ public class Driver {
                             break;
                         }
 
-                        System.out.println("\n\tCurrent Asset Details: " + existingAsset);
+                        if (existingAsset != null) {
+                            System.out.println("\n\tCurrent Asset Details: ");
+                            System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
+                            System.out.printf("\t| ID | Name          | Type        | Value    | Status   |%n");
+                            System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
+                            System.out.println("\t" + existingAsset);
+                            System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
+                        }
 
-                        String uname = InputUtil.getString("\n\tEnter new name (leave blank to keep same): ");
+                        System.out.println("\n\tNew Asset Details: ");
+                        String uname = InputUtil.getString("\tEnter new name (leave blank to keep same): ");
                         String utype = InputUtil.getString("\tEnter new type (leave blank to keep same): ");
                         double uval = InputUtil.getDouble("\tEnter new value (or -1 to keep same): ");
                         Double finalValue = (uval == -1) ? null : uval;

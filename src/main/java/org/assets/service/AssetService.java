@@ -196,6 +196,17 @@ public class AssetService {
                         System.out.println("\n\tUpdating...");
                         Thread.sleep(2000);
                         System.out.println("\tAsset updated successfully.");
+
+                        // Showing Updated Assets Details (Optional)
+                        Asset found = getAssetById(id);
+                        System.out.println("\tUpdated Asset Details.");
+                        if (found != null) {
+                            System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
+                            System.out.printf("\t| ID | Name          | Type        | Value    | Status   |%n");
+                            System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
+                            System.out.println("\t" + found);
+                            System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
+                        }
                     } else {
                         System.out.println("\tAsset not found.");
                     }
