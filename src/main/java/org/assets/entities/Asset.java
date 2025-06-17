@@ -13,7 +13,7 @@ public class Asset {
         this.name = name;
         this.type = type;
         this.value = value;
-        this.active = true;
+        this.active = active;
     }
 
     public Asset(String name, String type, double value) {
@@ -36,7 +36,7 @@ public class Asset {
 
     @Override
     public String toString() {
-        return id + " | " + name + " | " + type + " | " + value  + " | " + (active ? "Active" : "Inactive");
+        return id + " | " + name + " | " + type + " | " + value  + " | " + (active);
     }
 }
 

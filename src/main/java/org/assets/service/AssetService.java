@@ -6,7 +6,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.assets.entities.Asset;
-import org.assets.dbConnection.DBUtil;
+import org.assets.util.DBUtil;
 
 import java.io.*;
 import java.sql.*;
@@ -25,7 +25,9 @@ public class AssetService {
             stmt.setDouble(3, asset.getValue());
             stmt.setBoolean(4, true);
             stmt.executeUpdate();
-            System.out.println("Asset inserted successfully!");
+            System.out.println("\n\tInserting...");
+            Thread.sleep(2000);
+            System.out.println("\tAsset inserted successfully!");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -84,12 +86,14 @@ public class AssetService {
             boolean found = false;
             int row = 0;
 
-            System.out.println("\n--- Page " + page + " ---");
+            System.out.println("\n\tFetching...");
+            Thread.sleep(2000);
+            System.out.println("\t--- Page " + page + " ---");
             while (rs.next()) {
                 found = true;
                 row++;
-                System.out.println(
-                        row + " - " +
+                System.out.println("\t" +
+//                        row + " - " +
                                 rs.getInt("id") + " | " +
                                 rs.getString("name") + " | " +
                                 rs.getString("type") + " | " +
@@ -99,7 +103,7 @@ public class AssetService {
             }
 
             if (!found) {
-                System.out.println("No assets found with the given filter on this page.");
+                System.out.println("\tNo assets found with the given filter on this page.");
             }
 
         } catch (Exception e) {
@@ -114,6 +118,8 @@ public class AssetService {
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, id);
             ResultSet rs = stmt.executeQuery();
+            System.out.println("\n\tFetching...");
+            Thread.sleep(2000);
             if (rs.next()) {
                 return new Asset(
                         rs.getInt("id"),
@@ -123,7 +129,7 @@ public class AssetService {
                         rs.getBoolean("active")
                 );
             } else {
-                System.out.println("No asset found with ID: " + id);
+                System.out.println("\tNo asset found with ID: " + id);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -133,23 +139,24 @@ public class AssetService {
 
     // 3. View Single Asset by Name
     public void getAssetsByName(String searchName) {
-        String sql = "SELECT * FROM assets WHERE active = ? AND name LIKE ?";
+        String sql = "SELECT * FROM assets WHERE name LIKE ?";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setBoolean(1, true);
-            stmt.setString(2, "%" + searchName + "%");
+            stmt.setString(1, "%" + searchName + "%");
             ResultSet rs = stmt.executeQuery();
 
             boolean found = false;
             int count = 0;
 
+            System.out.println("\n\tFetching...");
+            Thread.sleep(2000);
             while (rs.next()) {
                 found = true;
                 count++;
-                System.out.println(
-                        count + " - " +
+                System.out.println("\t" +
+//                        count + " - " +
                                 rs.getInt("id") + " | " +
                                 rs.getString("name") + " | " +
                                 rs.getString("type") + " | " +
@@ -159,12 +166,12 @@ public class AssetService {
             }
 
             if (!found) {
-                System.out.println("No assets found with name containing \"" + searchName + "\".");
+                System.out.println("\tNo assets found with name containing \"" + searchName + "\".");
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Error fetching assets by name.");
+            System.out.println("\tError fetching assets by name.");
         }
     }
 
@@ -183,22 +190,27 @@ public class AssetService {
                 String finalName = (name == null || name.isBlank()) ? currentName : name;
                 String finalType = (type == null || type.isBlank()) ? currentType : type;
                 double finalVal = (value == null) ? currentValue : value;
-
-                String sql = "UPDATE assets SET name = ?, type = ?, value = ? WHERE id = ?";
-                PreparedStatement updateStmt = conn.prepareStatement(sql);
-                updateStmt.setString(1, finalName);
-                updateStmt.setString(2, finalType);
-                updateStmt.setDouble(3, finalVal);
-                updateStmt.setInt(4, id);
-
-                int rows = updateStmt.executeUpdate();
-                if (rows > 0) {
-                    System.out.println("Asset updated successfully.");
+                if (finalVal < 0) {
+                    System.out.println("\n\tAsset value can not be negative.");
                 } else {
-                    System.out.println("Asset not found.");
+                    String sql = "UPDATE assets SET name = ?, type = ?, value = ? WHERE id = ?";
+                    PreparedStatement updateStmt = conn.prepareStatement(sql);
+                    updateStmt.setString(1, finalName);
+                    updateStmt.setString(2, finalType);
+                    updateStmt.setDouble(3, finalVal);
+                    updateStmt.setInt(4, id);
+
+                    int rows = updateStmt.executeUpdate();
+                    if (rows > 0) {
+                        System.out.println("\n\tUpdating...");
+                        Thread.sleep(2000);
+                        System.out.println("\tAsset updated successfully.");
+                    } else {
+                        System.out.println("\tAsset not found.");
+                    }
                 }
             } else {
-                System.out.println("Asset with ID " + id + " not found.");
+                System.out.println("\tAsset with ID " + id + " not found.");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -213,9 +225,11 @@ public class AssetService {
             stmt.setInt(1, id);
             int rows = stmt.executeUpdate();
             if (rows > 0) {
-                System.out.println("Asset deleted successfully.");
+                System.out.println("\n\tDeleting...");
+                Thread.sleep(2000);
+                System.out.println("\tAsset deleted successfully.");
             } else {
-                System.out.println("Asset not found.");
+                System.out.println("\tAsset not found.");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -223,16 +237,18 @@ public class AssetService {
     }
 
     // 6. Asset Status - Activate
-    public void activateAssets(int activateId) {
+    public void activateAssets(int activateId) throws InterruptedException {
         try (Connection conn = DBUtil.getConnection()) {
             String sql = "UPDATE assets SET active = 1 WHERE id = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, activateId);
             int rows = stmt.executeUpdate();
             if (rows > 0) {
-                System.out.println("Asset Activated successfully.");
+                System.out.println("\n\tActivating...");
+                Thread.sleep(2000);
+                System.out.println("\tAsset Activated successfully.");
             } else {
-                System.out.println("Asset not found.");
+                System.out.println("\tAsset not found.");
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -240,16 +256,18 @@ public class AssetService {
     }
 
     // 6. Asset Status - Deactivate
-    public void deactivateAssets(int deactivateId) {
+    public void deactivateAssets(int deactivateId) throws InterruptedException {
         try (Connection conn = DBUtil.getConnection()) {
             String sql = "UPDATE assets SET active = 0 WHERE id = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, deactivateId);
             int rows = stmt.executeUpdate();
             if (rows > 0) {
-                System.out.println("Asset Deactivated successfully.");
+                System.out.println("\n\tDeactivating...");
+                Thread.sleep(2000);
+                System.out.println("\tAsset Deactivated successfully.");
             } else {
-                System.out.println("Asset not found.");
+                System.out.println("\tAsset not found.");
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -284,7 +302,9 @@ public class AssetService {
 
             stmt.executeBatch();
             workbook.close();
-            System.out.println("Data uploaded from Excel file.");
+            System.out.println("\n\tUploading...");
+            Thread.sleep(2000);
+            System.out.println("\tData uploaded from Excel file.");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -320,7 +340,9 @@ public class AssetService {
             }
 
             workbook.close();
-            System.out.println("Data exported to Excel file.");
+            System.out.println("\n\tExporting...");
+            Thread.sleep(2000);
+            System.out.println("\tData exported to Excel file.");
         } catch (Exception e) {
             e.printStackTrace();
         }
