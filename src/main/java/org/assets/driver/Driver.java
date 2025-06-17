@@ -51,7 +51,7 @@ public class Driver {
                             System.out.println("\t2) Filter by Name");
                             System.out.println("\t3) Filter by Type");
                             System.out.println("\t4) Filter by Value Range");
-                            System.out.println("\t5) No Filter (Active/Inactive)");
+                            System.out.println("\t5) No Filter (only Active)");
                             int filterChoice = InputUtil.getInt("\tEnter your choice: ");
 
                             switch (filterChoice) {
