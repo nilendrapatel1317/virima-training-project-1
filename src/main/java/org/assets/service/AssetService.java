@@ -34,15 +34,7 @@ public class AssetService {
     }
 
     // 2. View All Assets with Filters and Pagination
-    public void viewAssetsWithPagination(
-            int page,
-            int pageSize,
-            Integer idStart,
-            Integer idEnd,
-            String nameFilter,
-            String typeFilter,
-            Double valueStart,
-            Double valueEnd) {
+    public void viewAssetsWithPagination(int page, int pageSize, Integer idStart, Integer idEnd, String nameFilter, String typeFilter, Double valueStart, Double valueEnd) {
 
         try (Connection conn = DBUtil.getConnection()) {
             StringBuilder sql = new StringBuilder("SELECT * FROM assets WHERE active = true");
@@ -61,8 +53,8 @@ public class AssetService {
                 params.add("%" + nameFilter + "%");
             }
             if (typeFilter != null && !typeFilter.isEmpty()) {
-                sql.append(" AND type = ?");
-                params.add(typeFilter);
+                sql.append(" AND type Like ?");
+                params.add("%" + typeFilter + "%");
             }
             if (valueStart != null) {
                 sql.append(" AND value >= ?");
@@ -89,22 +81,33 @@ public class AssetService {
             System.out.println("\n\tFetching...");
             Thread.sleep(2000);
             System.out.println("\t--- Page " + page + " ---");
-            while (rs.next()) {
+
+            if (rs.next()) {
                 found = true;
-                row++;
-                System.out.println("\t" +
-//                        row + " - " +
-                                rs.getInt("id") + " | " +
-                                rs.getString("name") + " | " +
-                                rs.getString("type") + " | " +
-                                rs.getDouble("value") + " | " +
-                                rs.getBoolean("active")
-                );
+
+                // Print table header
+                System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
+                System.out.printf("\t| ID | Name          | Type        | Value    | Status   |%n");
+                System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
+
+                // Print the first row and others
+                do {
+                    System.out.printf("\t| %-2d | %-13s | %-11s | %-8.0f | %-8s |%n",
+                            rs.getInt("id"),
+                            rs.getString("name"),
+                            rs.getString("type"),
+                            rs.getDouble("value"),
+                            rs.getBoolean("active") ? "Active" : "Inactive");
+                } while (rs.next());
+
+                System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
             }
+
 
             if (!found) {
                 System.out.println("\tNo assets found with the given filter on this page.");
             }
+
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -121,13 +124,7 @@ public class AssetService {
             System.out.println("\n\tFetching...");
             Thread.sleep(2000);
             if (rs.next()) {
-                return new Asset(
-                        rs.getInt("id"),
-                        rs.getString("name"),
-                        rs.getString("type"),
-                        rs.getDouble("value"),
-                        rs.getBoolean("active")
-                );
+                return new Asset(rs.getInt("id"), rs.getString("name"), rs.getString("type"), rs.getDouble("value"), rs.getBoolean("active"));
             } else {
                 System.out.println("\tNo asset found with ID: " + id);
             }
@@ -141,8 +138,7 @@ public class AssetService {
     public void getAssetsByName(String searchName) {
         String sql = "SELECT * FROM assets WHERE name LIKE ?";
 
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = DBUtil.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, "%" + searchName + "%");
             ResultSet rs = stmt.executeQuery();
@@ -157,12 +153,7 @@ public class AssetService {
                 count++;
                 System.out.println("\t" +
 //                        count + " - " +
-                                rs.getInt("id") + " | " +
-                                rs.getString("name") + " | " +
-                                rs.getString("type") + " | " +
-                                rs.getDouble("value") + " | " +
-                                rs.getBoolean("active")
-                );
+                        rs.getInt("id") + " | " + rs.getString("name") + " | " + rs.getString("type") + " | " + rs.getDouble("value") + " | " + rs.getBoolean("active"));
             }
 
             if (!found) {
@@ -276,8 +267,7 @@ public class AssetService {
 
     // 7. Import from Excel
     public void uploadAssetsFromExcel(String filePath) throws IOException, SQLException {
-        try (FileInputStream fis = new FileInputStream(filePath);
-             Connection conn = DBUtil.getConnection()) {
+        try (FileInputStream fis = new FileInputStream(filePath); Connection conn = DBUtil.getConnection()) {
 
             Workbook workbook = WorkbookFactory.create(fis);
             Sheet sheet = workbook.getSheetAt(0);

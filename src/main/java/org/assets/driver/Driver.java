@@ -19,7 +19,7 @@ public class Driver {
                 System.out.println("0. Exit");
                 System.out.println("1. Add Asset");
                 System.out.println("2. View All Assets");
-                System.out.println("3. View Single Asset");
+                System.out.println("3. View Single Asset by ID");
                 System.out.println("4. Update Asset");
                 System.out.println("5. Delete Asset");
                 System.out.println("6. Asset Status");
@@ -55,7 +55,7 @@ public class Driver {
                             System.out.println("\t2) Filter by Name");
                             System.out.println("\t3) Filter by Type");
                             System.out.println("\t4) Filter by Value Range");
-                            System.out.println("\t5) No Filter");
+                            System.out.println("\t5) No Filter (Active/Inactive)");
                             int filterChoice = InputUtil.getInt("\tEnter your choice: ");
 
                             switch (filterChoice) {
@@ -103,30 +103,16 @@ public class Driver {
                         break;
 
                     case 3:
-                        assetSearchLoop:
-                        while (true) {
-                            System.out.println("\n\tChoose search option:");
-                            System.out.println("\t0) Go Back");
-                            System.out.println("\t1) Search by ID");
-                            System.out.println("\t2) Search by Name");
-                            int searchChoice = InputUtil.getInt("\tEnter your choice: ");
-
-                            switch (searchChoice) {
-                                case 0:
-                                    break assetSearchLoop;
-                                case 1:
-                                    int id = InputUtil.getInt("\tEnter Asset ID: ");
-                                    Asset found = service.getAssetById(id);
-                                    if (found != null) System.out.println("\t" + found);
-                                    break;
-                                case 2:
-                                    String searchName = InputUtil.getString("\tEnter Asset Name: ");
-                                    service.getAssetsByName(searchName);
-                                    break;
-                                default:
-                                    System.out.println("\tInvalid option.");
-                            }
+                        int id = InputUtil.getInt("\n\tEnter Asset ID: ");
+                        Asset found = service.getAssetById(id);
+                        if (found != null) {
+                            System.out.printf("\t+----+---------------+-------------+----------+--------+%n");
+                            System.out.printf("\t| ID | Name          | Type        | Value    | Active |%n");
+                            System.out.printf("\t+----+---------------+-------------+----------+--------+%n");
+                            System.out.println("\t" + found);
+                            System.out.printf("\t+----+---------------+-------------+----------+--------+%n");
                         }
+
                         break;
 
                     case 4:
