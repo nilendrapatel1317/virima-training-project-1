@@ -36,8 +36,8 @@ public class Asset {
 
     @Override
     public String toString() {
-        return String.format("| %-2d | %-13s | %-11s | %-8.0f | %-6s |",
-                id, name, type, value, active ? "true" : "false");
+        return String.format("| %-2d | %-13s | %-11s | %-8.0f | %-8s |",
+                id, name, type, value, active ? "Active" : "Inactive");
     }
 
 }

@@ -106,11 +106,11 @@ public class Driver {
                         int id = InputUtil.getInt("\n\tEnter Asset ID: ");
                         Asset found = service.getAssetById(id);
                         if (found != null) {
-                            System.out.printf("\t+----+---------------+-------------+----------+--------+%n");
-                            System.out.printf("\t| ID | Name          | Type        | Value    | Active |%n");
-                            System.out.printf("\t+----+---------------+-------------+----------+--------+%n");
+                            System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
+                            System.out.printf("\t| ID | Name          | Type        | Value    | Status   |%n");
+                            System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
                             System.out.println("\t" + found);
-                            System.out.printf("\t+----+---------------+-------------+----------+--------+%n");
+                            System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
                         }
 
                         break;
