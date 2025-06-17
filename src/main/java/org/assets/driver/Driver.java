@@ -4,10 +4,6 @@ import org.assets.entities.Asset;
 import org.assets.service.AssetService;
 import org.assets.util.InputUtil;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.Scanner;
-
 public class Driver {
     public static void main(String[] args) {
         AssetService service = new AssetService();
