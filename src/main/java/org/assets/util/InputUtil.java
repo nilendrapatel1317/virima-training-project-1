@@ -29,6 +29,19 @@ public class InputUtil {
     }
 
     public static String getString(String message) {
+        while (true) {
+            System.out.print(message);
+            String input = sc.nextLine().trim();
+            if (input.length() <= 0) {
+                System.out.println("❌ Value can not be empty.");
+            } else {
+                return input;
+            }
+        }
+    }
+
+    // Allows empty input (for optional/skippable fields)
+    public static String getOptionalString(String message) {
         System.out.print(message);
         return sc.nextLine().trim();
     }

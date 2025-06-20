@@ -27,7 +27,9 @@ public class AssetService {
             stmt.executeUpdate();
             System.out.println("\n\tInserting...");
             Thread.sleep(2000);
+            System.out.println("\n\t****************************");
             System.out.println("\tAsset inserted successfully!");
+            System.out.println("\t****************************");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -195,7 +197,9 @@ public class AssetService {
                     if (rows > 0) {
                         System.out.println("\n\tUpdating...");
                         Thread.sleep(2000);
+                        System.out.println("\n\t***************************");
                         System.out.println("\tAsset updated successfully.");
+                        System.out.println("\t***************************");
 
                         // Showing Updated Assets Details (Optional)
                         Asset found = getAssetById(id);
@@ -229,7 +233,9 @@ public class AssetService {
             if (rows > 0) {
                 System.out.println("\n\tDeleting...");
                 Thread.sleep(2000);
+                System.out.println("\n\t***************************");
                 System.out.println("\tAsset deleted successfully.");
+                System.out.println("\t***************************");
             } else {
                 System.out.println("\tAsset not found.");
             }
@@ -248,7 +254,9 @@ public class AssetService {
             if (rows > 0) {
                 System.out.println("\n\tActivating...");
                 Thread.sleep(2000);
+                System.out.println("\n\t*****************************");
                 System.out.println("\tAsset Activated successfully.");
+                System.out.println("\t*****************************");
             } else {
                 System.out.println("\tAsset not found.");
             }
@@ -267,7 +275,9 @@ public class AssetService {
             if (rows > 0) {
                 System.out.println("\n\tDeactivating...");
                 Thread.sleep(2000);
+                System.out.println("\n\t*******************************");
                 System.out.println("\tAsset Deactivated successfully.");
+                System.out.println("\t*******************************");
             } else {
                 System.out.println("\tAsset not found.");
             }
@@ -277,7 +287,7 @@ public class AssetService {
     }
 
     // 7. Import from Excel
-    public void uploadAssetsFromExcel(String filePath) throws IOException, SQLException {
+    public void uploadAssetsFromExcel(String filePath) {
         try (FileInputStream fis = new FileInputStream(filePath); Connection conn = DBUtil.getConnection()) {
 
             Workbook workbook = WorkbookFactory.create(fis);
@@ -305,7 +315,11 @@ public class AssetService {
             workbook.close();
             System.out.println("\n\tUploading...");
             Thread.sleep(2000);
+            System.out.println("\n\t******************************");
             System.out.println("\tData uploaded from Excel file.");
+            System.out.println("\t******************************");
+        } catch (java.io.FileNotFoundException fnfe) {
+            System.out.println("\n\t❌ File not found. Please check the path and try again.");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -343,7 +357,9 @@ public class AssetService {
             workbook.close();
             System.out.println("\n\tExporting...");
             Thread.sleep(2000);
+            System.out.println("\n\t****************************");
             System.out.println("\tData exported to Excel file.");
+            System.out.println("\t****************************");
         } catch (Exception e) {
             e.printStackTrace();
         }

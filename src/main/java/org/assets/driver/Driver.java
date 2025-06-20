@@ -3,15 +3,17 @@ package org.assets.driver;
 import org.assets.entities.Asset;
 import org.assets.service.AssetService;
 import org.assets.util.InputUtil;
+import java.io.FileNotFoundException;
 
 public class Driver {
     public static void main(String[] args) {
         AssetService service = new AssetService();
-        System.out.println("\n------- Asset Management System -------");
+        System.out.println("\n********** ASSET MANAGEMENT SYSTEM 7**********");
+        System.out.println("*********************************************");
 
         while (true) {
             try {
-                System.out.println("\n--- Main Menu ---");
+                System.out.println("\n-------- Main Menu --------");
                 System.out.println("0. Exit");
                 System.out.println("1. Add Asset");
                 System.out.println("2. View All Assets");
@@ -26,7 +28,9 @@ public class Driver {
                     case 0:
                         System.out.println("\nExiting...");
                         Thread.sleep(2000);
+                        System.out.println("\n*******************************************************");
                         System.out.println("Thanks For Using Assets Management System Application !");
+                        System.out.println("*******************************************************");
                         return;
 
                     case 1:
@@ -58,26 +62,26 @@ public class Driver {
                                 case 0:
                                     break filterLoop;
                                 case 1:
-                                    String idStartInput = InputUtil.getString("\tEnter start ID (or press Enter to skip): ");
+                                    String idStartInput = InputUtil.getOptionalString("\tEnter start ID (or press Enter to skip): ");
                                     if (!idStartInput.isEmpty()) idStart = Integer.parseInt(idStartInput);
 
-                                    String idEndInput = InputUtil.getString("\tEnter end ID (or press Enter to skip): ");
+                                    String idEndInput = InputUtil.getOptionalString("\tEnter end ID (or press Enter to skip): ");
                                     if (!idEndInput.isEmpty()) idEnd = Integer.parseInt(idEndInput);
                                     break;
 
                                 case 2:
-                                    nameFilter = InputUtil.getString("\tEnter name to search: ");
+                                    nameFilter = InputUtil.getOptionalString("\tEnter name to search: ");
                                     break;
 
                                 case 3:
-                                    typeFilter = InputUtil.getString("\tEnter asset type to search: ");
+                                    typeFilter = InputUtil.getOptionalString("\tEnter asset type to search: ");
                                     break;
 
                                 case 4:
-                                    String valStartInput = InputUtil.getString("\tEnter start value (or press Enter to skip): ");
+                                    String valStartInput = InputUtil.getOptionalString("\tEnter start value (or press Enter to skip): ");
                                     if (!valStartInput.isEmpty()) valueStart = Double.parseDouble(valStartInput);
 
-                                    String valEndInput = InputUtil.getString("\tEnter end value (or press Enter to skip): ");
+                                    String valEndInput = InputUtil.getOptionalString("\tEnter end value (or press Enter to skip): ");
                                     if (!valEndInput.isEmpty()) valueEnd = Double.parseDouble(valEndInput);
                                     break;
 
@@ -88,10 +92,10 @@ public class Driver {
                                     System.out.println("\tInvalid option. No filter applied.");
                             }
 
-                            String pageInput = InputUtil.getString("\tEnter page number (press Enter for default 1): ");
+                            String pageInput = InputUtil.getOptionalString("\tEnter page number (press Enter for default 1): ");
                             int page = pageInput.isEmpty() ? 1 : Integer.parseInt(pageInput);
 
-                            String sizeInput = InputUtil.getString("\tEnter number of records per page (press Enter for default 10): ");
+                            String sizeInput = InputUtil.getOptionalString("\tEnter number of records per page (press Enter for default 10): ");
                             int size = sizeInput.isEmpty() ? 10 : Integer.parseInt(sizeInput);
 
                             service.viewAssetsWithPagination(page, size, idStart, idEnd, nameFilter, typeFilter, valueStart, valueEnd);
@@ -129,8 +133,8 @@ public class Driver {
                         }
 
                         System.out.println("\n\tNew Asset Details: ");
-                        String uname = InputUtil.getString("\tEnter new name (leave blank to keep same): ");
-                        String utype = InputUtil.getString("\tEnter new type (leave blank to keep same): ");
+                        String uname = InputUtil.getOptionalString("\tEnter new name (leave blank to keep same): ");
+                        String utype = InputUtil.getOptionalString("\tEnter new type (leave blank to keep same): ");
                         double uval = InputUtil.getDouble("\tEnter new value (or -1 to keep same): ");
                         Double finalValue = (uval == -1) ? null : uval;
 
@@ -173,8 +177,8 @@ public class Driver {
                         while (true) {
                             System.out.println("\n\tChoose operation option:");
                             System.out.println("\t0) Go Back");
-                            System.out.println("\t1) Import data from excel file");
-                            System.out.println("\t2) Export data to excel file");
+                            System.out.println("\t1) Import data from excel (.xlsx) file");
+                            System.out.println("\t2) Export data to excel (.xlsx) file");
                             int ioChoice = InputUtil.getInt("\tEnter your choice: ");
 
                             switch (ioChoice) {
@@ -182,11 +186,31 @@ public class Driver {
                                     break ioLoop;
                                 case 1:
                                     String upath = InputUtil.getString("\tEnter Excel file path to upload: ");
-                                    service.uploadAssetsFromExcel(upath);
+                                    if (!(upath.charAt(0) >= '0') || !(upath.charAt(0) <= '9')) {
+                                        String uExtension = upath.substring(upath.length() - 4, upath.length());
+                                        if (uExtension.equals("xlsx")) {
+                                            service.uploadAssetsFromExcel(upath);
+                                        } else {
+                                            System.out.println("\n\t❌ Invalid extension (Use .xlsx)");
+                                        }
+                                    } else {
+                                        System.out.println("\n\t❌ Path or File name can not start with number");
+                                    }
+
                                     break;
                                 case 2:
                                     String epath = InputUtil.getString("\tEnter Excel file path to export: ");
-                                    service.exportAssetsToExcel(epath);
+                                    if (!(epath.charAt(0) >= '0') || !(epath.charAt(0) <= '9')) {
+                                        String eExtension = epath.substring(epath.length() - 4, epath.length());
+                                        if (eExtension.equals("xlsx")) {
+                                            service.exportAssetsToExcel(epath);
+                                        } else {
+                                            System.out.println("\n\t❌ Invalid extension (Use .xlsx)");
+                                        }
+                                    } else {
+                                        System.out.println("\n\t❌ Path or File name can not start with number");
+                                    }
+
                                     break;
                                 default:
                                     System.out.println("\tInvalid option.");
