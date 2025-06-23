@@ -5,6 +5,8 @@ import org.assets.service.AssetService;
 import org.assets.util.InputUtil;
 import java.io.FileNotFoundException;
 
+import static org.assets.service.AssetService.printTable;
+
 public class Driver {
     public static void main(String[] args) {
         AssetService service = new AssetService();
@@ -128,7 +130,7 @@ public class Driver {
                                 String.valueOf(found.getUpdatedAt()),
                                 found.isActive() ? "Active" : "Inactive"
                             });
-                            org.assets.service.AssetService.printTable(table);
+                            printTable(table);
                         }
                         break;
 
@@ -136,32 +138,34 @@ public class Driver {
                         int uid = InputUtil.getInt("\n\tEnter ID to update: ");
                         Asset existingAsset = service.getAssetById(uid);
                         if (existingAsset == null) {
-                            System.out.println("\tAsset with ID " + uid + " not found.");
                             break;
                         }
                         if (existingAsset != null) {
                             System.out.println("\n\tCurrent Asset Details: ");
-                            System.out.println("\t" + existingAsset);
+                            java.util.List<String[]> table = new java.util.ArrayList<>();
+                            table.add(new String[]{"ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "Status"});
+                            table.add(new String[]{
+                                String.valueOf(existingAsset.getId()),
+                                existingAsset.getName(),
+                                existingAsset.getType(),
+                                String.valueOf(existingAsset.getValue()),
+                                existingAsset.getLocation(),
+                                existingAsset.getCreatedBy(),
+                                String.valueOf(existingAsset.getCreatedAt()),
+                                existingAsset.getUpdatedBy(),
+                                String.valueOf(existingAsset.getUpdatedAt()),
+                                existingAsset.isActive() ? "Active" : "Inactive"
+                            });
+                            printTable(table);
                         }
                         System.out.println("\n\tNew Asset Details: (leave blank to keep same)");
                         String uname = InputUtil.getOptionalString("\tEnter new name: ");
                         String utype = InputUtil.getOptionalString("\tEnter new type: ");
                         String uvalStr = InputUtil.getOptionalString("\tEnter new value: ");
                         Double uval = uvalStr.isEmpty() ? null : Double.parseDouble(uvalStr);
-                        String uactiveStr = InputUtil.getOptionalString("\tIs active? (true/false): ");
-                        Boolean uactive = uactiveStr.isEmpty() ? null : Boolean.parseBoolean(uactiveStr);
-                        String ucreatedAtStr = InputUtil.getOptionalString("\tCreated at (yyyy-mm-dd HH:mm:ss): ");
-                        java.sql.Timestamp ucreatedAt = ucreatedAtStr.isEmpty() ? null : java.sql.Timestamp.valueOf(ucreatedAtStr + ".000000000");
-                        String uupdatedAtStr = InputUtil.getOptionalString("\tUpdated at (yyyy-mm-dd HH:mm:ss): ");
-                        java.sql.Timestamp uupdatedAt = uupdatedAtStr.isEmpty() ? null : java.sql.Timestamp.valueOf(uupdatedAtStr + ".000000000");
-                        String uarchivedStr = InputUtil.getOptionalString("\tIs archived? (true/false): ");
-                        Boolean uarchived = uarchivedStr.isEmpty() ? null : Boolean.parseBoolean(uarchivedStr);
-                        String udeletedStr = InputUtil.getOptionalString("\tIs deleted? (true/false): ");
-                        Boolean udeleted = udeletedStr.isEmpty() ? null : Boolean.parseBoolean(udeletedStr);
                         String ulocation = InputUtil.getOptionalString("\tEnter new location: ");
-                        String ucreatedBy = InputUtil.getOptionalString("\tEnter new created by: ");
-                        String uupdatedBy = InputUtil.getOptionalString("\tEnter new updated by: ");
-                        service.updateAsset(uid, uname, utype, uval, uactive, ucreatedAt, uupdatedAt, uarchived, udeleted, ulocation, ucreatedBy, uupdatedBy);
+                        java.sql.Timestamp uupdatedAt = new java.sql.Timestamp(System.currentTimeMillis());
+                        service.updateAsset(uid, uname, utype, uval, null, null, uupdatedAt, null, null, ulocation, null, null);
                         break;
 
                     case 5:

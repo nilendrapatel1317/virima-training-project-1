@@ -148,7 +148,7 @@ public class AssetService {
 
     // 2. View All Assets with Filters and Pagination
     public void viewAssetsWithPagination(int page, int pageSize, Integer idStart, Integer idEnd, String nameFilter,
-            String typeFilter, Double valueStart, Double valueEnd) {
+                                         String typeFilter, Double valueStart, Double valueEnd) {
         try (Connection conn = DBUtil.getConnection()) {
             StringBuilder sql = new StringBuilder(
                     "SELECT * FROM assets WHERE active = true AND isArchived = false AND isDeleted = false");
@@ -189,11 +189,11 @@ public class AssetService {
             boolean found = false;
             List<String[]> table = new ArrayList<>();
             // Header
-            table.add(new String[] { "ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy",
-                    "UpdatedAt", "Status" });
+            table.add(new String[]{"ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy",
+                    "UpdatedAt", "Status"});
             while (rs.next()) {
                 found = true;
-                table.add(new String[] {
+                table.add(new String[]{
                         String.valueOf(rs.getInt("id")),
                         rs.getString("name"),
                         rs.getString("type"),
@@ -255,16 +255,17 @@ public class AssetService {
 
     // 4. Update Asset
     public void updateAsset(int id, String name, String type, Double value, Boolean active,
-            java.sql.Timestamp createdAt, java.sql.Timestamp updatedAt, Boolean isArchived, Boolean isDeleted,
-            String location, String createdBy, String updatedBy) {
+                            java.sql.Timestamp createdAt, java.sql.Timestamp updatedAt, Boolean isArchived, Boolean isDeleted,
+                            String location, String createdBy, String updatedBy) {
         try (Connection conn = DBUtil.getConnection()) {
             String findSql = "SELECT * FROM assets WHERE id = ?";
             PreparedStatement stmt = conn.prepareStatement(findSql);
             stmt.setInt(1, id);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                if (isDeleted(rs))
-                    return; // check asset is deleted or not
+                if (isDeleted(rs)) return;
+                if (isArchived(rs)) return;
+                if (isActive(rs)) return;
                 String finalName = (name == null || name.isBlank()) ? rs.getString("name") : name;
                 String finalType = (type == null || type.isBlank()) ? rs.getString("type") : type;
                 double finalVal = (value == null) ? rs.getDouble("value") : value;
@@ -301,9 +302,23 @@ public class AssetService {
                     if (rows > 0) {
                         successMsg("Asset updated successfully");
                         Asset found = getAssetById(id);
-                        System.out.println("\tUpdated Asset Details.");
+                        System.out.println("\n\tUpdated Asset Details.");
                         if (found != null) {
-                            System.out.println("\t" + found);
+                            java.util.List<String[]> table = new java.util.ArrayList<>();
+                            table.add(new String[]{"ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "Status"});
+                            table.add(new String[]{
+                                String.valueOf(found.getId()),
+                                found.getName(),
+                                found.getType(),
+                                String.valueOf(found.getValue()),
+                                found.getLocation(),
+                                found.getCreatedBy(),
+                                String.valueOf(found.getCreatedAt()),
+                                found.getUpdatedBy(),
+                                String.valueOf(found.getUpdatedAt()),
+                                found.isActive() ? "Active" : "Inactive"
+                            });
+                            printTable(table);
                         }
                     } else {
                         System.out.println("\tAsset not found.");
