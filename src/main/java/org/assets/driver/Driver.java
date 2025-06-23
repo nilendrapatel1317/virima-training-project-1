@@ -26,11 +26,12 @@ public class Driver {
                 System.out.println("6. Asset Status");
                 System.out.println("7. Archived Asset");
                 System.out.println("8. Import / Export");
+                System.out.println("9. View Archived / Deleted Asset");
                 int choice = InputUtil.getInt("Enter your choice: ");
 
                 switch (choice) {
                     case 0:
-                        System.out.println("\nExiting...");
+                        System.out.println("\n\tExiting...");
                         Thread.sleep(2000);
                         successMsg("Thanks For Using Assets Management System Application");
                         return;
@@ -261,6 +262,28 @@ public class Driver {
                                         System.out.println("\n\t❌ Path or File name can not start with number");
                                     }
 
+                                    break;
+                                default:
+                                    System.out.println("\tInvalid option.");
+                            }
+                        }
+                        break;
+                    case 9:
+                        viewArchiveLoop:
+                        while (true) {
+                            System.out.println("\n\tView archived / deleted assets");
+                            System.out.println("\t0. Go back");
+                            System.out.println("\t1. View All Archived assets");
+                            System.out.println("\t2. View All Deleted assets");
+                            int archiveChoice = InputUtil.getInt("\tEnter your choice: ");
+                            switch (archiveChoice) {
+                                case 0:
+                                    break viewArchiveLoop;
+                                case 1:
+                                    service.viewArchivedAssets();
+                                    break;
+                                case 2:
+                                    service.viewDeletedAssets();
                                     break;
                                 default:
                                     System.out.println("\tInvalid option.");

@@ -348,7 +348,7 @@ public class AssetService {
                 System.out.println("\tAsset not found.");
                 return;
             }
-            String sql = "UPDATE assets SET isDeleted = 1 WHERE id = ?";
+            String sql = "UPDATE assets SET isDeleted = 1 , active = 0 , isArchived = 0 WHERE id = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, id);
             int rows = stmt.executeUpdate();
@@ -372,8 +372,8 @@ public class AssetService {
             if (rs.next()) {
                 if (isDeleted(rs))
                     return; // check asset is deleted or not
-                if (isArchived(rs))
-                    return;
+//                if (isArchived(rs))
+//                    return;
                 if (rs.getBoolean("active")) {
                     System.out.println("\n\tAsset is already active.");
                     return;
@@ -382,7 +382,7 @@ public class AssetService {
                 System.out.println("\tAsset not found.");
                 return;
             }
-            String sql = "UPDATE assets SET active = 1 WHERE id = ?";
+            String sql = "UPDATE assets SET active = 1 , isArchived = 0 WHERE id = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, activateId);
             int rows = stmt.executeUpdate();
@@ -414,7 +414,7 @@ public class AssetService {
                 System.out.println("\tAsset not found.");
                 return;
             }
-            String sql = "UPDATE assets SET active = 0 WHERE id = ?";
+            String sql = "UPDATE assets SET active = 0 , isArchived = 1 WHERE id = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, deactivateId);
             int rows = stmt.executeUpdate();
@@ -438,8 +438,8 @@ public class AssetService {
             if (rs.next()) {
                 if (isDeleted(rs))
                     return; // check asset is deleted or not
-                if (isActive(rs))
-                    return;
+//                if (isActive(rs))
+//                    return;
                 if (rs.getBoolean("isArchived")) {
                     System.out.println("\n\tAsset is already archived.");
                     return;
@@ -448,7 +448,7 @@ public class AssetService {
                 System.out.println("\tAsset not found.");
                 return;
             }
-            String sql = "UPDATE assets SET isArchived = 1 WHERE id = ?";
+            String sql = "UPDATE assets SET isArchived = 1 , active = 0 WHERE id = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, archiveId);
             int rows = stmt.executeUpdate();
@@ -480,7 +480,7 @@ public class AssetService {
                 System.out.println("\tAsset not found.");
                 return;
             }
-            String sql = "UPDATE assets SET isArchived = 0 WHERE id = ?";
+            String sql = "UPDATE assets SET isArchived = 0 , active = 1 WHERE id = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, unarchiveId);
             int rows = stmt.executeUpdate();
@@ -670,6 +670,72 @@ public class AssetService {
             workbook.close();
             successMsg("Data exported to Excel file");
 
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void viewArchivedAssets() {
+        try (Connection conn = DBUtil.getConnection()) {
+            String sql = "SELECT * FROM assets WHERE isArchived = 1 AND active = 0 ORDER BY id DESC";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            java.util.List<String[]> table = new java.util.ArrayList<>();
+            table.add(new String[]{"ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "Status"});
+            boolean found = false;
+            while (rs.next()) {
+                found = true;
+                table.add(new String[]{
+                    String.valueOf(rs.getInt("id")),
+                    rs.getString("name"),
+                    rs.getString("type"),
+                    String.valueOf(rs.getDouble("value")),
+                    rs.getString("location"),
+                    rs.getString("createdBy"),
+                    String.valueOf(rs.getTimestamp("createdAt")),
+                    rs.getString("updatedBy"),
+                    String.valueOf(rs.getTimestamp("updatedAt")),
+                    rs.getBoolean("active") ? "Active" : "Inactive"
+                });
+            }
+            if (found) {
+                printTable(table);
+            } else {
+                System.out.println("\tNo archived assets found.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void viewDeletedAssets() {
+        try (Connection conn = DBUtil.getConnection()) {
+            String sql = "SELECT * FROM assets WHERE isDeleted = 1 ORDER BY id DESC";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            java.util.List<String[]> table = new java.util.ArrayList<>();
+            table.add(new String[]{"ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "Status"});
+            boolean found = false;
+            while (rs.next()) {
+                found = true;
+                table.add(new String[]{
+                    String.valueOf(rs.getInt("id")),
+                    rs.getString("name"),
+                    rs.getString("type"),
+                    String.valueOf(rs.getDouble("value")),
+                    rs.getString("location"),
+                    rs.getString("createdBy"),
+                    String.valueOf(rs.getTimestamp("createdAt")),
+                    rs.getString("updatedBy"),
+                    String.valueOf(rs.getTimestamp("updatedAt")),
+                    rs.getBoolean("active") ? "Active" : "Inactive"
+                });
+            }
+            if (found) {
+                printTable(table);
+            } else {
+                System.out.println("\tNo deleted assets found.");
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
