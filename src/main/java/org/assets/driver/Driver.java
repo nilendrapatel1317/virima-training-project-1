@@ -3,15 +3,16 @@ package org.assets.driver;
 import org.assets.entities.Asset;
 import org.assets.service.AssetService;
 import org.assets.util.InputUtil;
+
 import java.io.FileNotFoundException;
 
 import static org.assets.service.AssetService.printTable;
+import static org.assets.service.AssetService.successMsg;
 
 public class Driver {
     public static void main(String[] args) {
         AssetService service = new AssetService();
-        System.out.println("\n********** ASSET MANAGEMENT SYSTEM 7**********");
-        System.out.println("*********************************************");
+        successMsg("Asset Management System");
 
         while (true) {
             try {
@@ -31,9 +32,7 @@ public class Driver {
                     case 0:
                         System.out.println("\nExiting...");
                         Thread.sleep(2000);
-                        System.out.println("\n*******************************************************");
-                        System.out.println("Thanks For Using Assets Management System Application !");
-                        System.out.println("*******************************************************");
+                        successMsg("Thanks For Using Assets Management System Application");
                         return;
 
                     case 1:
@@ -119,16 +118,16 @@ public class Driver {
                             java.util.List<String[]> table = new java.util.ArrayList<>();
                             table.add(new String[]{"ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "Status"});
                             table.add(new String[]{
-                                String.valueOf(found.getId()),
-                                found.getName(),
-                                found.getType(),
-                                String.valueOf(found.getValue()),
-                                found.getLocation(),
-                                found.getCreatedBy(),
-                                String.valueOf(found.getCreatedAt()),
-                                found.getUpdatedBy(),
-                                String.valueOf(found.getUpdatedAt()),
-                                found.isActive() ? "Active" : "Inactive"
+                                    String.valueOf(found.getId()),
+                                    found.getName(),
+                                    found.getType(),
+                                    String.valueOf(found.getValue()),
+                                    found.getLocation(),
+                                    found.getCreatedBy(),
+                                    String.valueOf(found.getCreatedAt()),
+                                    found.getUpdatedBy(),
+                                    String.valueOf(found.getUpdatedAt()),
+                                    found.isActive() ? "Active" : "Inactive"
                             });
                             printTable(table);
                         }
@@ -145,16 +144,16 @@ public class Driver {
                             java.util.List<String[]> table = new java.util.ArrayList<>();
                             table.add(new String[]{"ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "Status"});
                             table.add(new String[]{
-                                String.valueOf(existingAsset.getId()),
-                                existingAsset.getName(),
-                                existingAsset.getType(),
-                                String.valueOf(existingAsset.getValue()),
-                                existingAsset.getLocation(),
-                                existingAsset.getCreatedBy(),
-                                String.valueOf(existingAsset.getCreatedAt()),
-                                existingAsset.getUpdatedBy(),
-                                String.valueOf(existingAsset.getUpdatedAt()),
-                                existingAsset.isActive() ? "Active" : "Inactive"
+                                    String.valueOf(existingAsset.getId()),
+                                    existingAsset.getName(),
+                                    existingAsset.getType(),
+                                    String.valueOf(existingAsset.getValue()),
+                                    existingAsset.getLocation(),
+                                    existingAsset.getCreatedBy(),
+                                    String.valueOf(existingAsset.getCreatedAt()),
+                                    existingAsset.getUpdatedBy(),
+                                    String.valueOf(existingAsset.getUpdatedAt()),
+                                    existingAsset.isActive() ? "Active" : "Inactive"
                             });
                             printTable(table);
                         }

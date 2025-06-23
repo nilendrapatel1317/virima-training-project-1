@@ -24,7 +24,7 @@ import java.util.List;
 
 public class AssetService {
 
-    private static void successMsg(String msg) {
+    public static void successMsg(String msg) {
         for (int i = 0; i < msg.length() + 1; i++) {
             if (i == 0)
                 System.out.print("\n\t");
