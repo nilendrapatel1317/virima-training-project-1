@@ -126,7 +126,7 @@ public class AssetService {
     // 1. Add Asset
     public void createAsset(Asset asset) {
         try (Connection conn = DBUtil.getConnection()) {
-            String sql = "INSERT INTO assets(name, type, value, active, createdAt, updatedAt, isArchived, isDeleted, location, createdBy, updatedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO assets(name, type, value, active, createdAt, updatedAt, isArchived, isDeleted, location, createdBy, updatedBy, updateCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setString(1, asset.getName());
             stmt.setString(2, asset.getType());
@@ -139,6 +139,7 @@ public class AssetService {
             stmt.setString(9, asset.getLocation());
             stmt.setString(10, asset.getCreatedBy());
             stmt.setString(11, asset.getUpdatedBy());
+            stmt.setInt(12, 0);
             stmt.executeUpdate();
             successMsg("Asset inserted successfully");
         } catch (Exception e) {
@@ -190,7 +191,7 @@ public class AssetService {
             List<String[]> table = new ArrayList<>();
             // Header
             table.add(new String[]{"ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy",
-                    "UpdatedAt", "Status"});
+                    "UpdatedAt", "UpdateCount",  "Status"});
             while (rs.next()) {
                 found = true;
                 table.add(new String[]{
@@ -203,6 +204,7 @@ public class AssetService {
                         String.valueOf(rs.getTimestamp("createdAt")),
                         rs.getString("updatedBy"),
                         String.valueOf(rs.getTimestamp("updatedAt")),
+                        String.valueOf(rs.getInt("updateCount")),
                         rs.getBoolean("active") ? "Active" : "Inactive"
                 });
             }
@@ -243,7 +245,9 @@ public class AssetService {
                         rs.getBoolean("isDeleted"),
                         rs.getString("location"),
                         rs.getString("createdBy"),
-                        rs.getString("updatedBy"));
+                        rs.getString("updatedBy"),
+                        rs.getInt("updateCount")
+                );
             } else {
                 System.out.println("\tNo asset found with ID: " + id);
             }
@@ -284,7 +288,7 @@ public class AssetService {
                 if (finalVal < 0) {
                     System.out.println("\n\tAsset value can not be negative.");
                 } else {
-                    String sql = "UPDATE assets SET name = ?, type = ?, value = ?, active = ?, createdAt = ?, updatedAt = ?, isArchived = ?, isDeleted = ?, location = ?, createdBy = ?, updatedBy = ? WHERE id = ?";
+                    String sql = "UPDATE assets SET name = ?, type = ?, value = ?, active = ?, createdAt = ?, updatedAt = ?, isArchived = ?, isDeleted = ?, location = ?, createdBy = ?, updatedBy = ?, updateCount = updateCount + 1 WHERE id = ?";
                     PreparedStatement updateStmt = conn.prepareStatement(sql);
                     updateStmt.setString(1, finalName);
                     updateStmt.setString(2, finalType);
@@ -499,7 +503,7 @@ public class AssetService {
         try (FileInputStream fis = new FileInputStream(filePath); Connection conn = DBUtil.getConnection()) {
             Workbook workbook = WorkbookFactory.create(fis);
             Sheet sheet = workbook.getSheetAt(0);
-            String sql = "INSERT INTO assets(name, type, value, location, createdBy, createdAt, updatedBy, updatedAt, active, isArchived, isDeleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO assets(name, type, value, location, createdBy, createdAt, updatedBy, updatedAt, active, isArchived, isDeleted, updateCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             PreparedStatement stmt = conn.prepareStatement(sql);
             for (Row row : sheet) {
                 if (row.getRowNum() == 0)
@@ -534,6 +538,7 @@ public class AssetService {
                 stmt.setBoolean(9, active);
                 stmt.setBoolean(10, isArchived);
                 stmt.setBoolean(11, isDeleted);
+                stmt.setInt(12, 0);
                 stmt.addBatch();
             }
             stmt.executeBatch();
@@ -561,7 +566,7 @@ public class AssetService {
             String[] headers = {
                     "ID", "Name", "Type", "Value", "Location",
                     "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt",
-                    "isActive", "isArchived", "isDeleted"
+                    "isActive", "isArchived", "isDeleted", "UpdateCount"
             };
 
             // Create header font, style, background color
@@ -655,6 +660,10 @@ public class AssetService {
                 Cell cell11 = row.createCell(11);
                 cell11.setCellValue(rs.getBoolean("isDeleted"));
                 cell11.setCellStyle(dateStyle);
+
+                Cell cell12 = row.createCell(12);
+                cell12.setCellValue(rs.getInt("updateCount"));
+                cell12.setCellStyle(dateStyle);
             }
 
             // Auto-size all columns

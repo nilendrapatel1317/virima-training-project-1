@@ -48,7 +48,8 @@ public class Driver {
                         boolean isDeleted = false;
                         String location = InputUtil.getOptionalString("\tEnter location (or press Enter to skip): ");
                         String createdBy = InputUtil.getOptionalString("\tEnter created by (or press Enter to skip): ");
-                        Asset asset = new Asset(0, name, type, value, active, createdAt, updatedAt, isArchived, isDeleted, location, createdBy, createdBy);
+                        int updateCount = 0;
+                        Asset asset = new Asset(0, name, type, value, active, createdAt, updatedAt, isArchived, isDeleted, location, createdBy, createdBy, updateCount);
                         service.createAsset(asset);
                         break;
 
@@ -117,7 +118,7 @@ public class Driver {
                         Asset found = service.getAssetById(id);
                         if (found != null) {
                             java.util.List<String[]> table = new java.util.ArrayList<>();
-                            table.add(new String[]{"ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "Status"});
+                            table.add(new String[]{"ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "UpdateCount", "Status"});
                             table.add(new String[]{
                                     String.valueOf(found.getId()),
                                     found.getName(),
@@ -128,6 +129,7 @@ public class Driver {
                                     String.valueOf(found.getCreatedAt()),
                                     found.getUpdatedBy(),
                                     String.valueOf(found.getUpdatedAt()),
+                                    String.valueOf(found.getUpdateCount()),
                                     found.isActive() ? "Active" : "Inactive"
                             });
                             printTable(table);
@@ -143,7 +145,7 @@ public class Driver {
                         if (existingAsset != null) {
                             System.out.println("\n\tCurrent Asset Details: ");
                             java.util.List<String[]> table = new java.util.ArrayList<>();
-                            table.add(new String[]{"ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "Status"});
+                            table.add(new String[]{"ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "UpdateCount", "Status"});
                             table.add(new String[]{
                                     String.valueOf(existingAsset.getId()),
                                     existingAsset.getName(),
@@ -154,6 +156,7 @@ public class Driver {
                                     String.valueOf(existingAsset.getCreatedAt()),
                                     existingAsset.getUpdatedBy(),
                                     String.valueOf(existingAsset.getUpdatedAt()),
+                                    String.valueOf(existingAsset.getUpdateCount()),
                                     existingAsset.isActive() ? "Active" : "Inactive"
                             });
                             printTable(table);
