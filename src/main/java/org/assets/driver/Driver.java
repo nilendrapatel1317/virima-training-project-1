@@ -21,7 +21,8 @@ public class Driver {
                 System.out.println("4. Update Asset");
                 System.out.println("5. Delete Asset");
                 System.out.println("6. Asset Status");
-                System.out.println("7. Import / Export");
+                System.out.println("7. Archived Asset");
+                System.out.println("8. Import / Export");
                 int choice = InputUtil.getInt("Enter your choice: ");
 
                 switch (choice) {
@@ -38,7 +39,14 @@ public class Driver {
                         String name = InputUtil.getString("\tEnter name: ");
                         String type = InputUtil.getString("\tEnter type: ");
                         double value = InputUtil.getDouble("\tEnter value: ");
-                        Asset asset = new Asset(name, type, value);
+                        boolean active = true;
+                        java.sql.Timestamp createdAt = new java.sql.Timestamp(System.currentTimeMillis());
+                        java.sql.Timestamp updatedAt = new java.sql.Timestamp(System.currentTimeMillis());
+                        boolean isArchived = false;
+                        boolean isDeleted = false;
+                        String location = InputUtil.getOptionalString("\tEnter location (or press Enter to skip): ");
+                        String createdBy = InputUtil.getOptionalString("\tEnter created by (or press Enter to skip): ");
+                        Asset asset = new Asset(0, name, type, value, active, createdAt, updatedAt, isArchived, isDeleted, location, createdBy, createdBy);
                         service.createAsset(asset);
                         break;
 
@@ -106,13 +114,22 @@ public class Driver {
                         int id = InputUtil.getInt("\n\tEnter Asset ID: ");
                         Asset found = service.getAssetById(id);
                         if (found != null) {
-                            System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
-                            System.out.printf("\t| ID | Name          | Type        | Value    | Status   |%n");
-                            System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
-                            System.out.println("\t" + found);
-                            System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
+                            java.util.List<String[]> table = new java.util.ArrayList<>();
+                            table.add(new String[]{"ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "Status"});
+                            table.add(new String[]{
+                                String.valueOf(found.getId()),
+                                found.getName(),
+                                found.getType(),
+                                String.valueOf(found.getValue()),
+                                found.getLocation(),
+                                found.getCreatedBy(),
+                                String.valueOf(found.getCreatedAt()),
+                                found.getUpdatedBy(),
+                                String.valueOf(found.getUpdatedAt()),
+                                found.isActive() ? "Active" : "Inactive"
+                            });
+                            org.assets.service.AssetService.printTable(table);
                         }
-
                         break;
 
                     case 4:
@@ -122,23 +139,29 @@ public class Driver {
                             System.out.println("\tAsset with ID " + uid + " not found.");
                             break;
                         }
-
                         if (existingAsset != null) {
                             System.out.println("\n\tCurrent Asset Details: ");
-                            System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
-                            System.out.printf("\t| ID | Name          | Type        | Value    | Status   |%n");
-                            System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
                             System.out.println("\t" + existingAsset);
-                            System.out.printf("\t+----+---------------+-------------+----------+----------+%n");
                         }
-
-                        System.out.println("\n\tNew Asset Details: ");
-                        String uname = InputUtil.getOptionalString("\tEnter new name (leave blank to keep same): ");
-                        String utype = InputUtil.getOptionalString("\tEnter new type (leave blank to keep same): ");
-                        double uval = InputUtil.getDouble("\tEnter new value (or -1 to keep same): ");
-                        Double finalValue = (uval == -1) ? null : uval;
-
-                        service.updateAsset(uid, uname, utype, finalValue);
+                        System.out.println("\n\tNew Asset Details: (leave blank to keep same)");
+                        String uname = InputUtil.getOptionalString("\tEnter new name: ");
+                        String utype = InputUtil.getOptionalString("\tEnter new type: ");
+                        String uvalStr = InputUtil.getOptionalString("\tEnter new value: ");
+                        Double uval = uvalStr.isEmpty() ? null : Double.parseDouble(uvalStr);
+                        String uactiveStr = InputUtil.getOptionalString("\tIs active? (true/false): ");
+                        Boolean uactive = uactiveStr.isEmpty() ? null : Boolean.parseBoolean(uactiveStr);
+                        String ucreatedAtStr = InputUtil.getOptionalString("\tCreated at (yyyy-mm-dd HH:mm:ss): ");
+                        java.sql.Timestamp ucreatedAt = ucreatedAtStr.isEmpty() ? null : java.sql.Timestamp.valueOf(ucreatedAtStr + ".000000000");
+                        String uupdatedAtStr = InputUtil.getOptionalString("\tUpdated at (yyyy-mm-dd HH:mm:ss): ");
+                        java.sql.Timestamp uupdatedAt = uupdatedAtStr.isEmpty() ? null : java.sql.Timestamp.valueOf(uupdatedAtStr + ".000000000");
+                        String uarchivedStr = InputUtil.getOptionalString("\tIs archived? (true/false): ");
+                        Boolean uarchived = uarchivedStr.isEmpty() ? null : Boolean.parseBoolean(uarchivedStr);
+                        String udeletedStr = InputUtil.getOptionalString("\tIs deleted? (true/false): ");
+                        Boolean udeleted = udeletedStr.isEmpty() ? null : Boolean.parseBoolean(udeletedStr);
+                        String ulocation = InputUtil.getOptionalString("\tEnter new location: ");
+                        String ucreatedBy = InputUtil.getOptionalString("\tEnter new created by: ");
+                        String uupdatedBy = InputUtil.getOptionalString("\tEnter new updated by: ");
+                        service.updateAsset(uid, uname, utype, uval, uactive, ucreatedAt, uupdatedAt, uarchived, udeleted, ulocation, ucreatedBy, uupdatedBy);
                         break;
 
                     case 5:
@@ -171,8 +194,32 @@ public class Driver {
                             }
                         }
                         break;
-
                     case 7:
+                        archivedLoop:
+                        while (true) {
+                            System.out.println("\n\tChoose operation option:");
+                            System.out.println("\t0) Go Back");
+                            System.out.println("\t1) Archive asset");
+                            System.out.println("\t2) Unarchive asset");
+                            int archiveChoice = InputUtil.getInt("\tEnter your choice: ");
+
+                            switch (archiveChoice) {
+                                case 0:
+                                    break archivedLoop;
+                                case 1:
+                                    int archiveId = InputUtil.getInt("\tEnter ID to archive asset: ");
+                                    service.archiveAssets(archiveId);
+                                    break;
+                                case 2:
+                                    int unarchiveId = InputUtil.getInt("\tEnter ID to unarchive asset: ");
+                                    service.unarchiveAssets(unarchiveId);
+                                    break;
+                                default:
+                                    System.out.println("\tInvalid option.");
+                            }
+                        }
+                        break;
+                    case 8:
                         ioLoop:
                         while (true) {
                             System.out.println("\n\tChoose operation option:");
