@@ -23,10 +23,9 @@ public class Driver {
                 System.out.println("3. View Single Asset by ID");
                 System.out.println("4. Update Asset");
                 System.out.println("5. Delete Asset");
-                System.out.println("6. Asset Status");
-                System.out.println("7. Archived Asset");
-                System.out.println("8. Import / Export");
-                System.out.println("9. View Archived / Deleted Asset");
+                System.out.println("6. Archived Asset");
+                System.out.println("7. Import / Export");
+                System.out.println("8. View Archived / Deleted Asset");
                 int choice = InputUtil.getInt("Enter your choice: ");
 
                 switch (choice) {
@@ -40,16 +39,20 @@ public class Driver {
                         System.out.println("\n\tNew Asset Details");
                         String name = InputUtil.getString("\tEnter name: ");
                         String type = InputUtil.getString("\tEnter type: ");
-                        double value = InputUtil.getDouble("\tEnter value: ");
-                        boolean active = true;
-                        java.sql.Timestamp createdAt = new java.sql.Timestamp(System.currentTimeMillis());
-                        java.sql.Timestamp updatedAt = new java.sql.Timestamp(System.currentTimeMillis());
+                        String description = InputUtil.getOptionalString("\tEnter description: ");
+                        String category = InputUtil.getOptionalString("\tEnter category: ");
+                        String department = InputUtil.getOptionalString("\tEnter department: ");
+                        String model = InputUtil.getOptionalString("\tEnter model: ");
+                        String serialNumber = InputUtil.getOptionalString("\tEnter serial number: ");
+                        double originalValue = InputUtil.getDouble("\tEnter original value: ");
+                        double purchasedValue = InputUtil.getDouble("\tEnter purchased value: ");
+                        String location = InputUtil.getOptionalString("\tEnter location: ");
+                        String createdBy = InputUtil.getOptionalString("\tEnter created by: ");
+                        java.sql.Timestamp now = new java.sql.Timestamp(System.currentTimeMillis());
+                        int updateCount = 0;
                         boolean isArchived = false;
                         boolean isDeleted = false;
-                        String location = InputUtil.getOptionalString("\tEnter location (or press Enter to skip): ");
-                        String createdBy = InputUtil.getOptionalString("\tEnter created by (or press Enter to skip): ");
-                        int updateCount = 0;
-                        Asset asset = new Asset(0, name, type, value, active, createdAt, updatedAt, isArchived, isDeleted, location, createdBy, createdBy, updateCount);
+                        Asset asset = new Asset(0, name, type, description, category, department, model, serialNumber, originalValue, purchasedValue, location, createdBy, now, createdBy, now, updateCount, isArchived, isDeleted);
                         service.createAsset(asset);
                         break;
 
@@ -58,15 +61,15 @@ public class Driver {
                         while (true) {
                             Integer idStart = null, idEnd = null;
                             String nameFilter = null, typeFilter = null;
-                            Double valueStart = null, valueEnd = null;
+                            Double originalValueStart = null, originalValueEnd = null;
 
                             System.out.println("\n\tChoose filter option:");
                             System.out.println("\t0) Go Back");
                             System.out.println("\t1) Filter by ID Range");
                             System.out.println("\t2) Filter by Name");
                             System.out.println("\t3) Filter by Type");
-                            System.out.println("\t4) Filter by Value Range");
-                            System.out.println("\t5) No Filter (only Active)");
+                            System.out.println("\t4) Filter by Original Value Range");
+                            System.out.println("\t5) No Filter (all active, unarchived, not deleted)");
                             int filterChoice = InputUtil.getInt("\tEnter your choice: ");
 
                             switch (filterChoice) {
@@ -89,11 +92,11 @@ public class Driver {
                                     break;
 
                                 case 4:
-                                    String valStartInput = InputUtil.getOptionalString("\tEnter start value (or press Enter to skip): ");
-                                    if (!valStartInput.isEmpty()) valueStart = Double.parseDouble(valStartInput);
+                                    String valStartInput = InputUtil.getOptionalString("\tEnter start original value (or press Enter to skip): ");
+                                    if (!valStartInput.isEmpty()) originalValueStart = Double.parseDouble(valStartInput);
 
-                                    String valEndInput = InputUtil.getOptionalString("\tEnter end value (or press Enter to skip): ");
-                                    if (!valEndInput.isEmpty()) valueEnd = Double.parseDouble(valEndInput);
+                                    String valEndInput = InputUtil.getOptionalString("\tEnter end original value (or press Enter to skip): ");
+                                    if (!valEndInput.isEmpty()) originalValueEnd = Double.parseDouble(valEndInput);
                                     break;
 
                                 case 5:
@@ -109,7 +112,7 @@ public class Driver {
                             String sizeInput = InputUtil.getOptionalString("\tEnter number of records per page (press Enter for default 10): ");
                             int size = sizeInput.isEmpty() ? 10 : Integer.parseInt(sizeInput);
 
-                            service.viewAssetsWithPagination(page, size, idStart, idEnd, nameFilter, typeFilter, valueStart, valueEnd);
+                            service.viewAssetsWithPagination(page, size, idStart, idEnd, nameFilter, typeFilter, originalValueStart, originalValueEnd);
                         }
                         break;
 
@@ -118,19 +121,26 @@ public class Driver {
                         Asset found = service.getAssetById(id);
                         if (found != null) {
                             java.util.List<String[]> table = new java.util.ArrayList<>();
-                            table.add(new String[]{"ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "UpdateCount", "Status"});
+                            table.add(new String[]{"ID", "Name", "Type", "Description", "Category", "Department", "Model", "SerialNumber", "OriginalValue", "PurchasedValue", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "UpdateCount", "isArchived", "isDeleted"});
                             table.add(new String[]{
-                                    String.valueOf(found.getId()),
-                                    found.getName(),
-                                    found.getType(),
-                                    String.valueOf(found.getValue()),
-                                    found.getLocation(),
-                                    found.getCreatedBy(),
-                                    String.valueOf(found.getCreatedAt()),
-                                    found.getUpdatedBy(),
-                                    String.valueOf(found.getUpdatedAt()),
-                                    String.valueOf(found.getUpdateCount()),
-                                    found.isActive() ? "Active" : "Inactive"
+                                String.valueOf(found.getId()),
+                                found.getName(),
+                                found.getType(),
+                                found.getDescription(),
+                                found.getCategory(),
+                                found.getDepartment(),
+                                found.getModel(),
+                                found.getSerialNumber(),
+                                String.valueOf(found.getOriginalValue()),
+                                String.valueOf(found.getPurchasedValue()),
+                                found.getLocation(),
+                                found.getCreatedBy(),
+                                String.valueOf(found.getCreatedAt()),
+                                found.getUpdatedBy(),
+                                String.valueOf(found.getUpdatedAt()),
+                                String.valueOf(found.getUpdateCount()),
+                                String.valueOf(found.isArchived()),
+                                String.valueOf(found.isDeleted())
                             });
                             printTable(table);
                         }
@@ -140,35 +150,56 @@ public class Driver {
                         int uid = InputUtil.getInt("\n\tEnter ID to update: ");
                         Asset existingAsset = service.getAssetById(uid);
                         if (existingAsset == null) {
+                            System.out.println("\tAsset with ID " + uid + " not found.");
                             break;
                         }
                         if (existingAsset != null) {
                             System.out.println("\n\tCurrent Asset Details: ");
                             java.util.List<String[]> table = new java.util.ArrayList<>();
-                            table.add(new String[]{"ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "UpdateCount", "Status"});
+                            table.add(new String[]{"ID", "Name", "Type", "Description", "Category", "Department", "Model", "SerialNumber", "OriginalValue", "PurchasedValue", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "UpdateCount", "isArchived", "isDeleted"});
                             table.add(new String[]{
-                                    String.valueOf(existingAsset.getId()),
-                                    existingAsset.getName(),
-                                    existingAsset.getType(),
-                                    String.valueOf(existingAsset.getValue()),
-                                    existingAsset.getLocation(),
-                                    existingAsset.getCreatedBy(),
-                                    String.valueOf(existingAsset.getCreatedAt()),
-                                    existingAsset.getUpdatedBy(),
-                                    String.valueOf(existingAsset.getUpdatedAt()),
-                                    String.valueOf(existingAsset.getUpdateCount()),
-                                    existingAsset.isActive() ? "Active" : "Inactive"
+                                String.valueOf(existingAsset.getId()),
+                                existingAsset.getName(),
+                                existingAsset.getType(),
+                                existingAsset.getDescription(),
+                                existingAsset.getCategory(),
+                                existingAsset.getDepartment(),
+                                existingAsset.getModel(),
+                                existingAsset.getSerialNumber(),
+                                String.valueOf(existingAsset.getOriginalValue()),
+                                String.valueOf(existingAsset.getPurchasedValue()),
+                                existingAsset.getLocation(),
+                                existingAsset.getCreatedBy(),
+                                String.valueOf(existingAsset.getCreatedAt()),
+                                existingAsset.getUpdatedBy(),
+                                String.valueOf(existingAsset.getUpdatedAt()),
+                                String.valueOf(existingAsset.getUpdateCount()),
+                                String.valueOf(existingAsset.isArchived()),
+                                String.valueOf(existingAsset.isDeleted())
                             });
                             printTable(table);
                         }
                         System.out.println("\n\tNew Asset Details: (leave blank to keep same)");
                         String uname = InputUtil.getOptionalString("\tEnter new name: ");
                         String utype = InputUtil.getOptionalString("\tEnter new type: ");
-                        String uvalStr = InputUtil.getOptionalString("\tEnter new value: ");
-                        Double uval = uvalStr.isEmpty() ? null : Double.parseDouble(uvalStr);
+                        String udesc = InputUtil.getOptionalString("\tEnter new description: ");
+                        String ucat = InputUtil.getOptionalString("\tEnter new category: ");
+                        String udept = InputUtil.getOptionalString("\tEnter new department: ");
+                        String umodel = InputUtil.getOptionalString("\tEnter new model: ");
+                        String userial = InputUtil.getOptionalString("\tEnter new serial number: ");
+                        String uorigValStr = InputUtil.getOptionalString("\tEnter new original value: ");
+                        Double uorigVal = uorigValStr.isEmpty() ? null : Double.parseDouble(uorigValStr);
+                        String upurchValStr = InputUtil.getOptionalString("\tEnter new purchased value: ");
+                        Double upurchVal = upurchValStr.isEmpty() ? null : Double.parseDouble(upurchValStr);
                         String ulocation = InputUtil.getOptionalString("\tEnter new location: ");
+                        String ucreatedBy = InputUtil.getOptionalString("\tEnter new created by: ");
+                        String uupdatedBy = InputUtil.getOptionalString("\tEnter new updated by: ");
                         java.sql.Timestamp uupdatedAt = new java.sql.Timestamp(System.currentTimeMillis());
-                        service.updateAsset(uid, uname, utype, uval, null, null, uupdatedAt, null, null, ulocation, null, null);
+                        String uarchivedStr = InputUtil.getOptionalString("\tIs archived? (true/false): ");
+                        Boolean uarchived = uarchivedStr.isEmpty() ? null : Boolean.parseBoolean(uarchivedStr);
+                        String udeletedStr = InputUtil.getOptionalString("\tIs deleted? (true/false): ");
+                        Boolean udeleted = udeletedStr.isEmpty() ? null : Boolean.parseBoolean(udeletedStr);
+                        service.updateAsset(uid, uname, utype, udesc, ucat, udept, umodel, userial, uorigVal, upurchVal, ulocation, ucreatedBy, null, uupdatedBy, uupdatedAt, null, uarchived, udeleted);
                         break;
 
                     case 5:
@@ -176,32 +207,8 @@ public class Driver {
                         service.deleteAsset(did);
                         break;
 
-                    case 6:
-                        statusLoop:
-                        while (true) {
-                            System.out.println("\n\tChoose operation option:");
-                            System.out.println("\t0) Go Back");
-                            System.out.println("\t1) Activate asset");
-                            System.out.println("\t2) Deactivate asset");
-                            int statusChoice = InputUtil.getInt("\tEnter your choice: ");
 
-                            switch (statusChoice) {
-                                case 0:
-                                    break statusLoop;
-                                case 1:
-                                    int activateId = InputUtil.getInt("\tEnter ID to activate asset: ");
-                                    service.activateAssets(activateId);
-                                    break;
-                                case 2:
-                                    int deactivateId = InputUtil.getInt("\tEnter ID to deactivate asset: ");
-                                    service.deactivateAssets(deactivateId);
-                                    break;
-                                default:
-                                    System.out.println("\tInvalid option.");
-                            }
-                        }
-                        break;
-                    case 7:
+                    case 6:
                         archivedLoop:
                         while (true) {
                             System.out.println("\n\tChoose operation option:");
@@ -226,7 +233,7 @@ public class Driver {
                             }
                         }
                         break;
-                    case 8:
+                    case 7:
                         ioLoop:
                         while (true) {
                             System.out.println("\n\tChoose operation option:");
@@ -271,7 +278,7 @@ public class Driver {
                             }
                         }
                         break;
-                    case 9:
+                    case 8:
                         viewArchiveLoop:
                         while (true) {
                             System.out.println("\n\tView archived / deleted assets");

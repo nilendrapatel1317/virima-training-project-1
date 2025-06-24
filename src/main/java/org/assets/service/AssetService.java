@@ -48,14 +48,6 @@ public class AssetService {
         return false;
     }
 
-    private static boolean isActive(ResultSet rs) throws SQLException {
-        if (!rs.getBoolean("active")) {
-            System.out.println("\n\tAsset is inactive. First make it active.");
-            return true;
-        }
-        return false;
-    }
-
     private static boolean isArchived(ResultSet rs) throws SQLException {
         if (rs.getBoolean("isArchived")) {
             System.out.println("\n\tAsset is archived. First unarchive it.");
@@ -123,23 +115,57 @@ public class AssetService {
         }
     }
 
+    // Helper: Check if asset exists (all fields except id)
+    private boolean assetExists(Connection conn, String name, String type, String description, String category, String department, String model, String serialNumber, double originalValue, double purchasedValue, String location, String createdBy, Timestamp createdAt, String updatedBy, Timestamp updatedAt, int updateCount, boolean isArchived, boolean isDeleted) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM assets WHERE name=? AND type=? AND description=? AND category=? AND department=? AND model=? AND serialNumber=? AND originalValue=? AND purchasedValue=? AND location=? AND createdBy=? AND createdAt=? AND updatedBy=? AND updatedAt=? AND updateCount=? AND isArchived=? AND isDeleted=?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, name);
+            stmt.setString(2, type);
+            stmt.setString(3, description);
+            stmt.setString(4, category);
+            stmt.setString(5, department);
+            stmt.setString(6, model);
+            stmt.setString(7, serialNumber);
+            stmt.setDouble(8, originalValue);
+            stmt.setDouble(9, purchasedValue);
+            stmt.setString(10, location);
+            stmt.setString(11, createdBy);
+            stmt.setTimestamp(12, createdAt);
+            stmt.setString(13, updatedBy);
+            stmt.setTimestamp(14, updatedAt);
+            stmt.setInt(15, updateCount);
+            stmt.setBoolean(16, isArchived);
+            stmt.setBoolean(17, isDeleted);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        }
+        return false;
+    }
+
     // 1. Add Asset
     public void createAsset(Asset asset) {
         try (Connection conn = DBUtil.getConnection()) {
-            String sql = "INSERT INTO assets(name, type, value, active, createdAt, updatedAt, isArchived, isDeleted, location, createdBy, updatedBy, updateCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO assets(name, type, description, category, department, model, serialNumber, originalValue, purchasedValue, location, createdBy, createdAt, updatedBy, updatedAt, updateCount, isArchived, isDeleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setString(1, asset.getName());
             stmt.setString(2, asset.getType());
-            stmt.setDouble(3, asset.getValue());
-            stmt.setBoolean(4, asset.isActive());
-            stmt.setTimestamp(5, asset.getCreatedAt());
-            stmt.setTimestamp(6, asset.getUpdatedAt());
-            stmt.setBoolean(7, asset.isArchived());
-            stmt.setBoolean(8, asset.isDeleted());
-            stmt.setString(9, asset.getLocation());
-            stmt.setString(10, asset.getCreatedBy());
-            stmt.setString(11, asset.getUpdatedBy());
-            stmt.setInt(12, 0);
+            stmt.setString(3, asset.getDescription());
+            stmt.setString(4, asset.getCategory());
+            stmt.setString(5, asset.getDepartment());
+            stmt.setString(6, asset.getModel());
+            stmt.setString(7, asset.getSerialNumber());
+            stmt.setDouble(8, asset.getOriginalValue());
+            stmt.setDouble(9, asset.getPurchasedValue());
+            stmt.setString(10, asset.getLocation());
+            stmt.setString(11, asset.getCreatedBy());
+            stmt.setTimestamp(12, asset.getCreatedAt());
+            stmt.setString(13, asset.getUpdatedBy());
+            stmt.setTimestamp(14, asset.getUpdatedAt());
+            stmt.setInt(15, asset.getUpdateCount());
+            stmt.setBoolean(16, asset.isArchived());
+            stmt.setBoolean(17, asset.isDeleted());
             stmt.executeUpdate();
             successMsg("Asset inserted successfully");
         } catch (Exception e) {
@@ -148,11 +174,9 @@ public class AssetService {
     }
 
     // 2. View All Assets with Filters and Pagination
-    public void viewAssetsWithPagination(int page, int pageSize, Integer idStart, Integer idEnd, String nameFilter,
-                                         String typeFilter, Double valueStart, Double valueEnd) {
+    public void viewAssetsWithPagination(int page, int pageSize, Integer idStart, Integer idEnd, String nameFilter, String typeFilter, Double originalValueStart, Double originalValueEnd) {
         try (Connection conn = DBUtil.getConnection()) {
-            StringBuilder sql = new StringBuilder(
-                    "SELECT * FROM assets WHERE active = true AND isArchived = false AND isDeleted = false");
+            StringBuilder sql = new StringBuilder("SELECT * FROM assets WHERE isArchived = false AND isDeleted = false");
             List<Object> params = new ArrayList<>();
             if (idStart != null) {
                 sql.append(" AND id >= ?");
@@ -167,16 +191,16 @@ public class AssetService {
                 params.add("%" + nameFilter + "%");
             }
             if (typeFilter != null && !typeFilter.isEmpty()) {
-                sql.append(" AND type Like ?");
+                sql.append(" AND type LIKE ?");
                 params.add("%" + typeFilter + "%");
             }
-            if (valueStart != null) {
-                sql.append(" AND value >= ?");
-                params.add(valueStart);
+            if (originalValueStart != null) {
+                sql.append(" AND originalValue >= ?");
+                params.add(originalValueStart);
             }
-            if (valueEnd != null) {
-                sql.append(" AND value <= ?");
-                params.add(valueEnd);
+            if (originalValueEnd != null) {
+                sql.append(" AND originalValue <= ?");
+                params.add(originalValueEnd);
             }
             sql.append(" ORDER BY id DESC LIMIT ? OFFSET ?");
             params.add(pageSize);
@@ -186,26 +210,30 @@ public class AssetService {
                 stmt.setObject(i + 1, params.get(i));
             }
             ResultSet rs = stmt.executeQuery();
-
             boolean found = false;
             List<String[]> table = new ArrayList<>();
-            // Header
-            table.add(new String[]{"ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy",
-                    "UpdatedAt", "UpdateCount",  "Status"});
+            table.add(new String[]{"ID", "Name", "Type", "Description", "Category", "Department", "Model", "SerialNumber", "OriginalValue", "PurchasedValue", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "UpdateCount", "isArchived", "isDeleted"});
             while (rs.next()) {
                 found = true;
                 table.add(new String[]{
                         String.valueOf(rs.getInt("id")),
                         rs.getString("name"),
                         rs.getString("type"),
-                        String.valueOf(rs.getDouble("value")),
+                        rs.getString("description"),
+                        rs.getString("category"),
+                        rs.getString("department"),
+                        rs.getString("model"),
+                        rs.getString("serialNumber"),
+                        String.valueOf(rs.getDouble("originalValue")),
+                        String.valueOf(rs.getDouble("purchasedValue")),
                         rs.getString("location"),
                         rs.getString("createdBy"),
                         String.valueOf(rs.getTimestamp("createdAt")),
                         rs.getString("updatedBy"),
                         String.valueOf(rs.getTimestamp("updatedAt")),
                         String.valueOf(rs.getInt("updateCount")),
-                        rs.getBoolean("active") ? "Active" : "Inactive"
+                        String.valueOf(rs.getBoolean("isArchived")),
+                        String.valueOf(rs.getBoolean("isDeleted"))
                 });
             }
             System.out.println("\t--- Page " + page + " ---");
@@ -227,26 +255,33 @@ public class AssetService {
             stmt.setInt(1, id);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                if (isDeleted(rs))
+                if (rs.getBoolean("isDeleted")) {
+                    System.out.println("\tAsset is deleted. You can't watch it.");
                     return null;
-                if (isArchived(rs))
+                }
+                if (rs.getBoolean("isArchived")) {
+                    System.out.println("\tAsset is archived. First unarchive it.");
                     return null;
-                if (isActive(rs))
-                    return null;
+                }
                 return new Asset(
                         rs.getInt("id"),
                         rs.getString("name"),
                         rs.getString("type"),
-                        rs.getDouble("value"),
-                        rs.getBoolean("active"),
-                        rs.getTimestamp("createdAt"),
-                        rs.getTimestamp("updatedAt"),
-                        rs.getBoolean("isArchived"),
-                        rs.getBoolean("isDeleted"),
+                        rs.getString("description"),
+                        rs.getString("category"),
+                        rs.getString("department"),
+                        rs.getString("model"),
+                        rs.getString("serialNumber"),
+                        rs.getDouble("originalValue"),
+                        rs.getDouble("purchasedValue"),
                         rs.getString("location"),
                         rs.getString("createdBy"),
+                        rs.getTimestamp("createdAt"),
                         rs.getString("updatedBy"),
-                        rs.getInt("updateCount")
+                        rs.getTimestamp("updatedAt"),
+                        rs.getInt("updateCount"),
+                        rs.getBoolean("isArchived"),
+                        rs.getBoolean("isDeleted")
                 );
             } else {
                 System.out.println("\tNo asset found with ID: " + id);
@@ -258,75 +293,81 @@ public class AssetService {
     }
 
     // 4. Update Asset
-    public void updateAsset(int id, String name, String type, Double value, Boolean active,
-                            java.sql.Timestamp createdAt, java.sql.Timestamp updatedAt, Boolean isArchived, Boolean isDeleted,
-                            String location, String createdBy, String updatedBy) {
+    public void updateAsset(int id, String name, String type, String description, String category, String department, String model, String serialNumber, Double originalValue, Double purchasedValue, String location, String createdBy, java.sql.Timestamp createdAt, String updatedBy, java.sql.Timestamp updatedAt, Integer updateCount, Boolean isArchived, Boolean isDeleted) {
         try (Connection conn = DBUtil.getConnection()) {
             String findSql = "SELECT * FROM assets WHERE id = ?";
             PreparedStatement stmt = conn.prepareStatement(findSql);
             stmt.setInt(1, id);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                if (isDeleted(rs)) return;
-                if (isArchived(rs)) return;
-                if (isActive(rs)) return;
                 String finalName = (name == null || name.isBlank()) ? rs.getString("name") : name;
                 String finalType = (type == null || type.isBlank()) ? rs.getString("type") : type;
-                double finalVal = (value == null) ? rs.getDouble("value") : value;
-                boolean finalActive = (active == null) ? rs.getBoolean("active") : active;
+                String finalDescription = (description == null || description.isBlank()) ? rs.getString("description") : description;
+                String finalCategory = (category == null || category.isBlank()) ? rs.getString("category") : category;
+                String finalDepartment = (department == null || department.isBlank()) ? rs.getString("department") : department;
+                String finalModel = (model == null || model.isBlank()) ? rs.getString("model") : model;
+                String finalSerialNumber = (serialNumber == null || serialNumber.isBlank()) ? rs.getString("serialNumber") : serialNumber;
+                double finalOriginalValue = (originalValue == null) ? rs.getDouble("originalValue") : originalValue;
+                double finalPurchasedValue = (purchasedValue == null) ? rs.getDouble("purchasedValue") : purchasedValue;
+                String finalLocation = (location == null || location.isBlank()) ? rs.getString("location") : location;
+                String finalCreatedBy = (createdBy == null || createdBy.isBlank()) ? rs.getString("createdBy") : createdBy;
                 java.sql.Timestamp finalCreatedAt = (createdAt == null) ? rs.getTimestamp("createdAt") : createdAt;
-                java.sql.Timestamp finalUpdatedAt = (updatedAt == null)
-                        ? new java.sql.Timestamp(System.currentTimeMillis())
-                        : updatedAt;
+                String finalUpdatedBy = (updatedBy == null || updatedBy.isBlank()) ? rs.getString("updatedBy") : updatedBy;
+                java.sql.Timestamp finalUpdatedAt = (updatedAt == null) ? new java.sql.Timestamp(System.currentTimeMillis()) : updatedAt;
+                int finalUpdateCount = (updateCount == null) ? rs.getInt("updateCount") : updateCount;
                 boolean finalIsArchived = (isArchived == null) ? rs.getBoolean("isArchived") : isArchived;
                 boolean finalIsDeleted = (isDeleted == null) ? rs.getBoolean("isDeleted") : isDeleted;
-                String finalLocation = (location == null || location.isBlank()) ? rs.getString("location") : location;
-                String finalCreatedBy = (createdBy == null || createdBy.isBlank()) ? rs.getString("createdBy")
-                        : createdBy;
-                String finalUpdatedBy = (updatedBy == null || updatedBy.isBlank()) ? rs.getString("updatedBy")
-                        : updatedBy;
-                if (finalVal < 0) {
-                    System.out.println("\n\tAsset value can not be negative.");
-                } else {
-                    String sql = "UPDATE assets SET name = ?, type = ?, value = ?, active = ?, createdAt = ?, updatedAt = ?, isArchived = ?, isDeleted = ?, location = ?, createdBy = ?, updatedBy = ?, updateCount = updateCount + 1 WHERE id = ?";
-                    PreparedStatement updateStmt = conn.prepareStatement(sql);
-                    updateStmt.setString(1, finalName);
-                    updateStmt.setString(2, finalType);
-                    updateStmt.setDouble(3, finalVal);
-                    updateStmt.setBoolean(4, finalActive);
-                    updateStmt.setTimestamp(5, finalCreatedAt);
-                    updateStmt.setTimestamp(6, finalUpdatedAt);
-                    updateStmt.setBoolean(7, finalIsArchived);
-                    updateStmt.setBoolean(8, finalIsDeleted);
-                    updateStmt.setString(9, finalLocation);
-                    updateStmt.setString(10, finalCreatedBy);
-                    updateStmt.setString(11, finalUpdatedBy);
-                    updateStmt.setInt(12, id);
-                    int rows = updateStmt.executeUpdate();
-                    if (rows > 0) {
-                        successMsg("Asset updated successfully");
-                        Asset found = getAssetById(id);
-                        System.out.println("\n\tUpdated Asset Details.");
-                        if (found != null) {
-                            java.util.List<String[]> table = new java.util.ArrayList<>();
-                            table.add(new String[]{"ID", "Name", "Type", "Value", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "Status"});
-                            table.add(new String[]{
+                String sql = "UPDATE assets SET name = ?, type = ?, description = ?, category = ?, department = ?, model = ?, serialNumber = ?, originalValue = ?, purchasedValue = ?, location = ?, createdBy = ?, createdAt = ?, updatedBy = ?, updatedAt = ?, updateCount = updateCount + 1, isArchived = ?, isDeleted = ? WHERE id = ?";
+                PreparedStatement updateStmt = conn.prepareStatement(sql);
+                updateStmt.setString(1, finalName);
+                updateStmt.setString(2, finalType);
+                updateStmt.setString(3, finalDescription);
+                updateStmt.setString(4, finalCategory);
+                updateStmt.setString(5, finalDepartment);
+                updateStmt.setString(6, finalModel);
+                updateStmt.setString(7, finalSerialNumber);
+                updateStmt.setDouble(8, finalOriginalValue);
+                updateStmt.setDouble(9, finalPurchasedValue);
+                updateStmt.setString(10, finalLocation);
+                updateStmt.setString(11, finalCreatedBy);
+                updateStmt.setTimestamp(12, finalCreatedAt);
+                updateStmt.setString(13, finalUpdatedBy);
+                updateStmt.setTimestamp(14, finalUpdatedAt);
+                updateStmt.setBoolean(15, finalIsArchived);
+                updateStmt.setBoolean(16, finalIsDeleted);
+                updateStmt.setInt(17, id);
+                int rows = updateStmt.executeUpdate();
+                if (rows > 0) {
+                    successMsg("Asset updated successfully");
+                    Asset found = getAssetById(id);
+                    System.out.println("\n\tUpdated Asset Details.");
+                    if (found != null) {
+                        java.util.List<String[]> table = new java.util.ArrayList<>();
+                        table.add(new String[]{"ID", "Name", "Type", "Description", "Category", "Department", "Model", "SerialNumber", "OriginalValue", "PurchasedValue", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "UpdateCount", "isArchived", "isDeleted"});
+                        table.add(new String[]{
                                 String.valueOf(found.getId()),
                                 found.getName(),
                                 found.getType(),
-                                String.valueOf(found.getValue()),
+                                found.getDescription(),
+                                found.getCategory(),
+                                found.getDepartment(),
+                                found.getModel(),
+                                found.getSerialNumber(),
+                                String.valueOf(found.getOriginalValue()),
+                                String.valueOf(found.getPurchasedValue()),
                                 found.getLocation(),
                                 found.getCreatedBy(),
                                 String.valueOf(found.getCreatedAt()),
                                 found.getUpdatedBy(),
                                 String.valueOf(found.getUpdatedAt()),
-                                found.isActive() ? "Active" : "Inactive"
-                            });
-                            printTable(table);
-                        }
-                    } else {
-                        System.out.println("\tAsset not found.");
+                                String.valueOf(found.getUpdateCount()),
+                                String.valueOf(found.isArchived()),
+                                String.valueOf(found.isDeleted())
+                        });
+                        printTable(table);
                     }
+                } else {
+                    System.out.println("\tAsset not found.");
                 }
             } else {
                 System.out.println("\tAsset with ID " + id + " not found.");
@@ -352,7 +393,7 @@ public class AssetService {
                 System.out.println("\tAsset not found.");
                 return;
             }
-            String sql = "UPDATE assets SET isDeleted = 1 , active = 0 , isArchived = 0 WHERE id = ?";
+            String sql = "UPDATE assets SET isDeleted = 1 , isArchived = 0 WHERE id = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, id);
             int rows = stmt.executeUpdate();
@@ -366,72 +407,6 @@ public class AssetService {
         }
     }
 
-    // 6. Asset Status - Activate
-    public void activateAssets(int activateId) throws InterruptedException {
-        try (Connection conn = DBUtil.getConnection()) {
-            String checkSql = "SELECT * FROM assets WHERE id = ?";
-            PreparedStatement checkStmt = conn.prepareStatement(checkSql);
-            checkStmt.setInt(1, activateId);
-            ResultSet rs = checkStmt.executeQuery();
-            if (rs.next()) {
-                if (isDeleted(rs))
-                    return; // check asset is deleted or not
-//                if (isArchived(rs))
-//                    return;
-                if (rs.getBoolean("active")) {
-                    System.out.println("\n\tAsset is already active.");
-                    return;
-                }
-            } else {
-                System.out.println("\tAsset not found.");
-                return;
-            }
-            String sql = "UPDATE assets SET active = 1 , isArchived = 0 WHERE id = ?";
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setInt(1, activateId);
-            int rows = stmt.executeUpdate();
-            if (rows > 0) {
-                successMsg("Asset Activated successfully");
-            } else {
-                System.out.println("\tAsset not found.");
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    // 6. Asset Status - Deactivate
-    public void deactivateAssets(int deactivateId) throws InterruptedException {
-        try (Connection conn = DBUtil.getConnection()) {
-            String checkSql = "SELECT * FROM assets WHERE id = ?";
-            PreparedStatement checkStmt = conn.prepareStatement(checkSql);
-            checkStmt.setInt(1, deactivateId);
-            ResultSet rs = checkStmt.executeQuery();
-            if (rs.next()) {
-                if (isDeleted(rs))
-                    return; // check asset is deleted or not
-                if (!rs.getBoolean("active")) {
-                    System.out.println("\n\tAsset is already inactive.");
-                    return;
-                }
-            } else {
-                System.out.println("\tAsset not found.");
-                return;
-            }
-            String sql = "UPDATE assets SET active = 0 , isArchived = 1 WHERE id = ?";
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setInt(1, deactivateId);
-            int rows = stmt.executeUpdate();
-            if (rows > 0) {
-                successMsg("Asset Deactivated successfully");
-            } else {
-                System.out.println("\tAsset not found.");
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     // 6. Asset Status - Archive
     public void archiveAssets(int archiveId) throws InterruptedException {
         try (Connection conn = DBUtil.getConnection()) {
@@ -442,8 +417,6 @@ public class AssetService {
             if (rs.next()) {
                 if (isDeleted(rs))
                     return; // check asset is deleted or not
-//                if (isActive(rs))
-//                    return;
                 if (rs.getBoolean("isArchived")) {
                     System.out.println("\n\tAsset is already archived.");
                     return;
@@ -452,7 +425,7 @@ public class AssetService {
                 System.out.println("\tAsset not found.");
                 return;
             }
-            String sql = "UPDATE assets SET isArchived = 1 , active = 0 WHERE id = ?";
+            String sql = "UPDATE assets SET isArchived = 1 WHERE id = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, archiveId);
             int rows = stmt.executeUpdate();
@@ -484,7 +457,7 @@ public class AssetService {
                 System.out.println("\tAsset not found.");
                 return;
             }
-            String sql = "UPDATE assets SET isArchived = 0 , active = 1 WHERE id = ?";
+            String sql = "UPDATE assets SET isArchived = 0 WHERE id = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, unarchiveId);
             int rows = stmt.executeUpdate();
@@ -500,50 +473,59 @@ public class AssetService {
 
     // 7. Import from Excel
     public void uploadAssetsFromExcel(String filePath) {
+        int duplicateCount = 0;
+        int newCount = 0;
         try (FileInputStream fis = new FileInputStream(filePath); Connection conn = DBUtil.getConnection()) {
             Workbook workbook = WorkbookFactory.create(fis);
             Sheet sheet = workbook.getSheetAt(0);
-            String sql = "INSERT INTO assets(name, type, value, location, createdBy, createdAt, updatedBy, updatedAt, active, isArchived, isDeleted, updateCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO assets(name, type, description, category, department, model, serialNumber, originalValue, purchasedValue, location, createdBy, createdAt, updatedBy, updatedAt, updateCount, isArchived, isDeleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             PreparedStatement stmt = conn.prepareStatement(sql);
             for (Row row : sheet) {
-                if (row.getRowNum() == 0)
-                    continue;
+                if (row.getRowNum() == 0) continue;
                 String name = getCellStringValue(row, 1);
                 String type = getCellStringValue(row, 2);
-                double value = getCellStringValue(row, 3).isEmpty() ? 0.0
-                        : Double.parseDouble(getCellStringValue(row, 3));
-                String location = getCellStringValue(row, 4);
-                String createdBy = getCellStringValue(row, 5);
-                java.sql.Timestamp createdAt = getCellStringValue(row, 6).isEmpty()
-                        ? new java.sql.Timestamp(System.currentTimeMillis())
-                        : java.sql.Timestamp.valueOf(getCellStringValue(row, 6));
-                String updatedBy = getCellStringValue(row, 7);
-                java.sql.Timestamp updatedAt = getCellStringValue(row, 8).isEmpty()
-                        ? new java.sql.Timestamp(System.currentTimeMillis())
-                        : java.sql.Timestamp.valueOf(getCellStringValue(row, 8));
-                boolean active = getCellStringValue(row, 9).isEmpty() ? true
-                        : Boolean.parseBoolean(getCellStringValue(row, 9));
-                boolean isArchived = getCellStringValue(row, 10).isEmpty() ? false
-                        : Boolean.parseBoolean(getCellStringValue(row, 10));
-                boolean isDeleted = getCellStringValue(row, 11).isEmpty() ? false
-                        : Boolean.parseBoolean(getCellStringValue(row, 11));
+                String description = getCellStringValue(row, 3);
+                String category = getCellStringValue(row, 4);
+                String department = getCellStringValue(row, 5);
+                String model = getCellStringValue(row, 6);
+                String serialNumber = getCellStringValue(row, 7);
+                double originalValue = getCellStringValue(row, 8).isEmpty() ? 0.0 : Double.parseDouble(getCellStringValue(row, 8));
+                double purchasedValue = getCellStringValue(row, 9).isEmpty() ? 0.0 : Double.parseDouble(getCellStringValue(row, 9));
+                String location = getCellStringValue(row, 10);
+                String createdBy = getCellStringValue(row, 11);
+                java.sql.Timestamp createdAt = getCellStringValue(row, 12).isEmpty() ? new java.sql.Timestamp(System.currentTimeMillis()) : java.sql.Timestamp.valueOf(getCellStringValue(row, 12));
+                String updatedBy = getCellStringValue(row, 13);
+                java.sql.Timestamp updatedAt = getCellStringValue(row, 14).isEmpty() ? new java.sql.Timestamp(System.currentTimeMillis()) : java.sql.Timestamp.valueOf(getCellStringValue(row, 14));
+                int updateCount = getCellStringValue(row, 15).isEmpty() ? 0 : Integer.parseInt(getCellStringValue(row, 15));
+                boolean isArchived = getCellStringValue(row, 16).isEmpty() ? false : Boolean.parseBoolean(getCellStringValue(row, 16));
+                boolean isDeleted = getCellStringValue(row, 17).isEmpty() ? false : Boolean.parseBoolean(getCellStringValue(row, 17));
+                if (assetExists(conn, name, type, description, category, department, model, serialNumber, originalValue, purchasedValue, location, createdBy, createdAt, updatedBy, updatedAt, updateCount, isArchived, isDeleted)) {
+                    duplicateCount++;
+                    continue;
+                }
                 stmt.setString(1, name);
                 stmt.setString(2, type);
-                stmt.setDouble(3, value);
-                stmt.setString(4, location);
-                stmt.setString(5, createdBy);
-                stmt.setTimestamp(6, createdAt);
-                stmt.setString(7, updatedBy);
-                stmt.setTimestamp(8, updatedAt);
-                stmt.setBoolean(9, active);
-                stmt.setBoolean(10, isArchived);
-                stmt.setBoolean(11, isDeleted);
-                stmt.setInt(12, 0);
+                stmt.setString(3, description);
+                stmt.setString(4, category);
+                stmt.setString(5, department);
+                stmt.setString(6, model);
+                stmt.setString(7, serialNumber);
+                stmt.setDouble(8, originalValue);
+                stmt.setDouble(9, purchasedValue);
+                stmt.setString(10, location);
+                stmt.setString(11, createdBy);
+                stmt.setTimestamp(12, createdAt);
+                stmt.setString(13, updatedBy);
+                stmt.setTimestamp(14, updatedAt);
+                stmt.setInt(15, updateCount);
+                stmt.setBoolean(16, isArchived);
+                stmt.setBoolean(17, isDeleted);
                 stmt.addBatch();
+                newCount++;
             }
             stmt.executeBatch();
             workbook.close();
-            successMsg("Data uploaded successfully");
+            successMsg("File imported: " + duplicateCount + " duplicate(s), " + newCount + " new record(s)");
         } catch (java.io.FileNotFoundException fnfe) {
             System.out.println("\n\t❌ File not found. Please check the path and try again.");
         } catch (Exception e) {
@@ -553,23 +535,18 @@ public class AssetService {
 
     // 7. Export to Excel
     public void exportAssetsToExcel(String filePath) throws SQLException, IOException {
+        int exportCount = 0;
         try (Connection conn = DBUtil.getConnection()) {
-            String sql = "SELECT * FROM assets WHERE active = 1 AND isDeleted = 0 AND isArchived = 0";
+            String sql = "SELECT * FROM assets WHERE isDeleted = 0 AND isArchived = 0";
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(sql);
 
             Workbook workbook = new XSSFWorkbook();
             Sheet sheet = workbook.createSheet("Assets");
 
-            // Create header row
             Row header = sheet.createRow(0);
-            String[] headers = {
-                    "ID", "Name", "Type", "Value", "Location",
-                    "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt",
-                    "isActive", "isArchived", "isDeleted", "UpdateCount"
-            };
+            String[] headers = {"ID", "Name", "Type", "Description", "Category", "Department", "Model", "SerialNumber", "OriginalValue", "PurchasedValue", "Location", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "UpdateCount", "isArchived", "isDeleted"};
 
-            // Create header font, style, background color
             Font headerFont = workbook.createFont();
             headerFont.setBold(true);
             headerFont.setFontHeightInPoints((short) 12);
@@ -612,58 +589,78 @@ public class AssetService {
             int rowIndex = 1;
             while (rs.next()) {
                 Row row = sheet.createRow(rowIndex++);
-
+                exportCount++;
                 Cell cell0 = row.createCell(0);
                 cell0.setCellValue(rs.getInt("id"));
-                cell0.setCellStyle(dateStyle);
+                cell0.setCellStyle(cellStyle);
 
                 Cell cell1 = row.createCell(1);
                 cell1.setCellValue(rs.getString("name"));
-                cell1.setCellStyle(dateStyle);
+                cell1.setCellStyle(cellStyle);
 
                 Cell cell2 = row.createCell(2);
                 cell2.setCellValue(rs.getString("type"));
-                cell2.setCellStyle(dateStyle);
-
+                cell2.setCellStyle(cellStyle);
+                
                 Cell cell3 = row.createCell(3);
-                cell3.setCellValue(rs.getDouble("value"));
-                cell3.setCellStyle(dateStyle);
+                cell3.setCellValue(rs.getString("description"));
+                cell3.setCellStyle(cellStyle);
 
                 Cell cell4 = row.createCell(4);
-                cell4.setCellValue(rs.getString("location"));
-                cell4.setCellStyle(dateStyle);
+                cell4.setCellValue(rs.getString("category"));
+                cell4.setCellStyle(cellStyle);
 
                 Cell cell5 = row.createCell(5);
-                cell5.setCellValue(rs.getString("createdBy"));
-                cell5.setCellStyle(dateStyle);
+                cell5.setCellValue(rs.getString("department"));
+                cell5.setCellStyle(cellStyle);
 
                 Cell cell6 = row.createCell(6);
-                cell6.setCellValue(rs.getTimestamp("createdAt"));
-                cell6.setCellStyle(dateStyle);
+                cell6.setCellValue(rs.getString("model"));
+                cell6.setCellStyle(cellStyle);
 
                 Cell cell7 = row.createCell(7);
-                cell7.setCellValue(rs.getString("updatedBy"));
-                cell7.setCellStyle(dateStyle);
+                cell7.setCellValue(rs.getString("serialNumber"));
+                cell7.setCellStyle(cellStyle);
 
                 Cell cell8 = row.createCell(8);
-                cell8.setCellValue(rs.getTimestamp("updatedAt"));
-                cell8.setCellStyle(dateStyle);
+                cell8.setCellValue(rs.getDouble("originalValue"));
+                cell8.setCellStyle(cellStyle);
 
                 Cell cell9 = row.createCell(9);
-                cell9.setCellValue(rs.getBoolean("active"));
-                cell9.setCellStyle(dateStyle);
+                cell9.setCellValue(rs.getDouble("purchasedValue"));
+                cell9.setCellStyle(cellStyle);
 
                 Cell cell10 = row.createCell(10);
-                cell10.setCellValue(rs.getBoolean("isArchived"));
-                cell10.setCellStyle(dateStyle);
+                cell10.setCellValue(rs.getString("location"));
+                cell10.setCellStyle(cellStyle);
 
                 Cell cell11 = row.createCell(11);
-                cell11.setCellValue(rs.getBoolean("isDeleted"));
-                cell11.setCellStyle(dateStyle);
+                cell11.setCellValue(rs.getString("createdBy"));
+                cell11.setCellStyle(cellStyle);
 
                 Cell cell12 = row.createCell(12);
-                cell12.setCellValue(rs.getInt("updateCount"));
+                cell12.setCellValue(String.valueOf(rs.getTimestamp("createdAt")));
                 cell12.setCellStyle(dateStyle);
+
+                Cell cell13 = row.createCell(13);
+                cell13.setCellValue(rs.getString("updatedBy"));
+                cell13.setCellStyle(cellStyle);
+
+                Cell cell14 = row.createCell(14);
+                cell14.setCellValue(String.valueOf(rs.getTimestamp("updatedAt")));
+                cell14.setCellStyle(dateStyle);
+
+                Cell cell15 = row.createCell(15);
+                cell15.setCellValue(rs.getInt("updateCount"));
+                cell15.setCellStyle(cellStyle);
+
+                Cell cell16 = row.createCell(16);
+                cell16.setCellValue(rs.getBoolean("isArchived"));
+                cell16.setCellStyle(cellStyle);
+
+                Cell cell17 = row.createCell(17);
+                cell17.setCellValue(rs.getBoolean("isDeleted"));
+                cell17.setCellStyle(cellStyle);
             }
 
             // Auto-size all columns
@@ -671,14 +668,11 @@ public class AssetService {
                 sheet.autoSizeColumn(i);
             }
 
-            // Write to file
             try (FileOutputStream fos = new FileOutputStream(filePath)) {
                 workbook.write(fos);
             }
-
             workbook.close();
-            successMsg("Data exported to Excel file");
-
+            successMsg("File exported: " + exportCount + " total record(s)!");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -695,16 +689,16 @@ public class AssetService {
             while (rs.next()) {
                 found = true;
                 table.add(new String[]{
-                    String.valueOf(rs.getInt("id")),
-                    rs.getString("name"),
-                    rs.getString("type"),
-                    String.valueOf(rs.getDouble("value")),
-                    rs.getString("location"),
-                    rs.getString("createdBy"),
-                    String.valueOf(rs.getTimestamp("createdAt")),
-                    rs.getString("updatedBy"),
-                    String.valueOf(rs.getTimestamp("updatedAt")),
-                    rs.getBoolean("active") ? "Active" : "Inactive"
+                        String.valueOf(rs.getInt("id")),
+                        rs.getString("name"),
+                        rs.getString("type"),
+                        String.valueOf(rs.getDouble("value")),
+                        rs.getString("location"),
+                        rs.getString("createdBy"),
+                        String.valueOf(rs.getTimestamp("createdAt")),
+                        rs.getString("updatedBy"),
+                        String.valueOf(rs.getTimestamp("updatedAt")),
+                        rs.getBoolean("active") ? "Active" : "Inactive"
                 });
             }
             if (found) {
@@ -728,16 +722,16 @@ public class AssetService {
             while (rs.next()) {
                 found = true;
                 table.add(new String[]{
-                    String.valueOf(rs.getInt("id")),
-                    rs.getString("name"),
-                    rs.getString("type"),
-                    String.valueOf(rs.getDouble("value")),
-                    rs.getString("location"),
-                    rs.getString("createdBy"),
-                    String.valueOf(rs.getTimestamp("createdAt")),
-                    rs.getString("updatedBy"),
-                    String.valueOf(rs.getTimestamp("updatedAt")),
-                    rs.getBoolean("active") ? "Active" : "Inactive"
+                        String.valueOf(rs.getInt("id")),
+                        rs.getString("name"),
+                        rs.getString("type"),
+                        String.valueOf(rs.getDouble("value")),
+                        rs.getString("location"),
+                        rs.getString("createdBy"),
+                        String.valueOf(rs.getTimestamp("createdAt")),
+                        rs.getString("updatedBy"),
+                        String.valueOf(rs.getTimestamp("updatedAt")),
+                        rs.getBoolean("isArchived") ? "Archived" : "Unarchived"
                 });
             }
             if (found) {
